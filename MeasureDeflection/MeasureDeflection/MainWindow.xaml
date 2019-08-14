@@ -1,0 +1,325 @@
+﻿<Window x:Class="MeasureDeflection.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MeasureDeflection"
+        mc:Ignorable="d"
+    Title="MainWindow" Height="650" Width="1000">
+    <!--d:DataContext="{d:DesignInstance MainWindow}"-->
+    <!--d:DataContext="{d:DesignInstance busView:BusView, IsDesignTimeCreatable=True}">-->
+    <Window.Resources>
+        <Style x:Key="DefaultStyle" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="Control.Margin" Value="5"/>
+        </Style>
+        <Style x:Key="ButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Margin" Value="5" />
+        </Style>
+        <Style x:Key="TextBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="ImageStyle" TargetType="{x:Type Image}">
+            <Setter Property="Margin" Value="10" />
+        </Style>
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonStyle}"/>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxStyle}"/>
+        <Image x:Key="DefaultImage"  Source="TestFrame.bmp" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*"  />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Column="0"
+                  Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="*"  />
+                    <ColumnDefinition Width="*"  />
+                </Grid.ColumnDefinitions>
+                <ComboBox Grid.Column="0" 
+                          Name="cbx_cams"
+                          Style="{StaticResource DefaultStyle}" 
+                          ItemsSource="{Binding VideoCaptureDevices}"  
+                          DisplayMemberPath="Name"
+                          SelectedValuePath="MonikerString"
+                          DropDownOpened="Cbx_cams_DropDownOpened"
+                      />
+                <Button Grid.Column="1" 
+                        Content="{Binding StartText, FallbackValue='Start'}"
+                        Click="btn_Start_Click" 
+                        Background="{Binding StartButtonColor}"
+                    />
+                <Button Grid.Column="2"
+                        Content="OneShot"
+                        Click="btn_OneShot_Click"
+                        />
+            </Grid>
+
+            <Border Grid.Column="0" 
+                    Grid.Row="1" 
+                    BorderThickness="1"
+                    BorderBrush="Black"
+                    Margin="5">
+                <Image Name="img_CamStream"
+                   Source="{Binding CamImage, FallbackValue='TestFrame.bmp'}"
+                   Mouse.MouseDown="Img_CamStream_MouseDown">
+                </Image>
+            </Border>
+
+            <Grid Grid.Column="0"
+                  Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto"  />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Grid.Column="0"
+                        Grid.Row="0"
+                        Name="SetAnchor"
+                        Content="Set Achor"
+                        Click="btn_Anchor_Click"
+                        Background="{Binding AnchorColorPickerBack}"
+                        />
+                <Border Grid.Column="1" 
+                        Grid.Row="0"
+                        BorderThickness="1"
+                        BorderBrush="Black">
+                    <StackPanel Orientation="Horizontal"
+                                Background="LightYellow">
+                        <Label Content="AnchorPoint"
+                               Width="80"/>
+                        <TextBox Text="{Binding AnchorColor.R, FallbackValue='000'}"
+                             Width="40"
+                             Background="LightSalmon"
+                             />
+                        <TextBox Text="{Binding AnchorColor.G, FallbackValue='000'}" 
+                             Width="40"
+                             Background="LightGreen"
+                             />
+                        <TextBox Text="{Binding AnchorColor.B, FallbackValue='000'}" 
+                             Width="40"
+                             Background="LightBlue" 
+                             />
+                        <TextBox Text="Picked" 
+                             Foreground="Gray"
+                             Background="{Binding AnchorColor.PickedColor}" 
+                             Width="80"/>
+                    </StackPanel>
+                </Border>
+                
+                <Button Grid.Column="0"
+                    Grid.Row="1"
+                    Name="SetTip"
+                    Content="Set Moving Tip"
+                    Click="btn_MovingTip_Click"
+                    Background="{Binding TipColorPickerBack}"
+                    IsEnabled="{Binding TipSelectionActive}"
+                    />
+                <Border Grid.Column="1" 
+                        Grid.Row="1"
+                        BorderThickness="1"
+                        BorderBrush="Black">
+                    <StackPanel Orientation="Horizontal"
+                                Background="LightGreen">
+                        <Label Content="MovingTip"
+                               Width="80"/>
+                        <TextBox Text="{Binding MovingTipColor.R, FallbackValue='000'}"
+                         Width="40"
+                         Background="LightSalmon"
+                         IsEnabled="{Binding TipSelectionActive}"
+                         />
+                        <TextBox Text="{Binding MovingTipColor.G, FallbackValue='000'}" 
+                         Width="40"
+                         Background="LightGreen"
+                         IsEnabled="{Binding TipSelectionActive}"
+                         />
+                        <TextBox Text="{Binding MovingTipColor.B, FallbackValue='000'}" 
+                         Width="40"
+                         Background="LightBlue" 
+                         IsEnabled="{Binding TipSelectionActive}"
+                         />
+                        <TextBox Text="Picked" 
+                         Foreground="Gray"
+                         Background="{Binding MovingTipColor.PickedColor}" 
+                         Width="80"/>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Column="1"
+                            Grid.Row="2" 
+                            Orientation="Horizontal">
+                    <Label Content="Picker radius" />
+                    <TextBox Width="50" 
+                             Text="{Binding PickerRadius}"
+                             />
+                    <Label Content="Tolerance factor" />
+                    <TextBox Width="50" 
+                             Text="{Binding TargetToleranceFactor}"
+                             ToolTip="Tolerance factor applied on size in order to define tolerated dot movement"
+                             />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Column="0"
+                        Grid.Row="3"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Top"
+                        >
+                <Button Content="Preload"
+                    Click="btn_PreloadImage"
+                    />
+                <Button Content="Save Image"
+                        Click="btn_SaveImageClick"
+                        />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" 
+                        Grid.Column="1"
+                        Grid.Row="0"
+                        >
+            </StackPanel>
+            
+            <Border Grid.Column="1" 
+                    Grid.Row="1" 
+                    BorderThickness="1"
+                    BorderBrush="Black"
+                    Margin="5">
+                <Image Source="{Binding ProcessedImage}"
+                    />
+            </Border>
+
+            <Grid Grid.Column="1"
+                  Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto"  />
+                    <ColumnDefinition Width="Auto"  />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Grid.Column="0"
+                        Grid.Row="0"
+                        Content="Set Reference"
+                        Click="btn_SetReference"
+                        />
+                <TextBox Grid.Column="1"
+                         Grid.Row="0"
+                         IsReadOnly="True"
+                         Text="{Binding AngleOutput, FallbackValue=0.00}"
+                         Width="200"
+                         FontSize="20"
+                         TextAlignment="Right"
+                         />
+                <Label Grid.Column="2" 
+                       Grid.Row="0" 
+                       Content="°"
+                       FontSize="20"
+                       Width="100"
+                       />
+
+                <Grid Grid.Column="1" 
+                      Grid.Row="1" 
+                      Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Column="0" 
+                           Grid.Row="0" 
+                           Content="Anchor Coord" />
+                    <TextBox Grid.Column="1" 
+                             Grid.Row="0" 
+                             HorizontalAlignment="Stretch"
+                             IsReadOnly="True"
+                             Text="{Binding AnchorPixelPosition}" />
+
+                    <Label Grid.Column="0" 
+                           Grid.Row="1" 
+                           Content="Tip Coord" />
+                    <TextBox Grid.Column="1" 
+                             Grid.Row="1" 
+                             HorizontalAlignment="Stretch"
+                             IsReadOnly="True"
+                             Text="{Binding MovingTipPixelPosition}" />
+                </Grid>
+            </Grid>
+
+
+            <Grid Grid.Column="1"
+                  Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" 
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Stretch"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         IsReadOnly="True"
+                         VerticalScrollBarVisibility="Visible"
+                         MaxHeight="80"
+                         Text="{Binding DotPositions}"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Vertical">
+                    <Button Content="Save dot" Click="btn_SaveCurrentPostion" />
+                    <Button Content="Copy list" Click="btn_CopyListToClipBoard"/>
+                    <Button Content="Clear" Click="bnt_ClearList" />
+                </StackPanel>
+                
+
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0" 
+                     Text="{Binding Prompt.Caption}"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Stretch"
+                     TextAlignment="Center"
+                     />
+            <TextBox Grid.Column="1" 
+                     Text="{Binding Prompt.PromptMessage}"
+                     HorizontalAlignment="Stretch"
+                     TextAlignment="Left"
+                     Foreground="{Binding Prompt.PromptColor}"
+                     />
+        </Grid>
+    </Grid>
+</Window>

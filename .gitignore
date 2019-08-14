@@ -1,0 +1,16 @@
+#   Most common commands:
+#   foo     Matches elements located in the same directory as the .gitignore file
+#   foo/    Matches only the directory and subparts of it
+#   **/foo  Matches files or directories anywehere in the (sub)directory of .gitignore
+#   foo/**  Matches all elements inside of a particular directory
+#       variations: **/foo/bar or foo/**/bar
+#
+
+**/bin
+**/obj
+**/packages
+**/*.user
+**/*.suo
+/.vs
+.vs
+Local/
