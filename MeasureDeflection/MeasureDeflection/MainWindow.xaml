@@ -4,10 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MeasureDeflection"
-        mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type={x:Type local:MainWindow}}"
+    mc:Ignorable="d"
     Title="MainWindow" Height="650" Width="1000">
-    <!--d:DataContext="{d:DesignInstance MainWindow}"-->
-    <!--d:DataContext="{d:DesignInstance busView:BusView, IsDesignTimeCreatable=True}">-->
+   
     <Window.Resources>
         <Style x:Key="DefaultStyle" TargetType="{x:Type FrameworkElement}">
             <Setter Property="Control.Margin" Value="5"/>
@@ -64,12 +64,12 @@
                       />
                 <Button Grid.Column="1" 
                         Content="{Binding StartText, FallbackValue='Start'}"
-                        Click="btn_Start_Click" 
                         Background="{Binding StartButtonColor}"
+                        Command="{Binding StartImageingAndProcessing_Command}"
                     />
                 <Button Grid.Column="2"
                         Content="OneShot"
-                        Click="btn_OneShot_Click"
+                        Command="{Binding SampleSingleShotAndProcess_Command}"
                         />
             </Grid>
 
@@ -100,8 +100,8 @@
                         Grid.Row="0"
                         Name="SetAnchor"
                         Content="Set Achor"
-                        Click="btn_Anchor_Click"
                         Background="{Binding AnchorColorPickerBack}"
+                        Command="{Binding AnchorColorPicker_Command}"
                         />
                 <Border Grid.Column="1" 
                         Grid.Row="0"
@@ -134,7 +134,7 @@
                     Grid.Row="1"
                     Name="SetTip"
                     Content="Set Moving Tip"
-                    Click="btn_MovingTip_Click"
+                    Command="{Binding MovingTipColorPicker_Command}"
                     Background="{Binding TipColorPickerBack}"
                     IsEnabled="{Binding TipSelectionActive}"
                     />
@@ -189,10 +189,11 @@
                         VerticalAlignment="Top"
                         >
                 <Button Content="Preload"
-                    Click="btn_PreloadImage"
+                    Command="{Binding PreloadImageAndProcess_Command}"
+                        
                     />
                 <Button Content="Save Image"
-                        Click="btn_SaveImageClick"
+                        Command="{Binding SaveCurrentImage_Command}"
                         />
             </StackPanel>
 
@@ -226,7 +227,7 @@
                 <Button Grid.Column="0"
                         Grid.Row="0"
                         Content="Set Reference"
-                        Click="btn_SetReference"
+                        Command="{Binding SetAngleReference_Command}"
                         />
                 <TextBox Grid.Column="1"
                          Grid.Row="0"
@@ -293,9 +294,15 @@
                          Text="{Binding DotPositions}"/>
                 
                 <StackPanel Grid.Column="1" Orientation="Vertical">
-                    <Button Content="Save dot" Click="btn_SaveCurrentPostion" />
-                    <Button Content="Copy list" Click="btn_CopyListToClipBoard"/>
-                    <Button Content="Clear" Click="bnt_ClearList" />
+                    <Button Content="Save dot" 
+                            Command="{Binding SaveCurrentAngleToList_Command}"
+                            />
+                    <Button Content="Copy list" 
+                            Command="{Binding CopyListToClipboard_Command}"
+                            />
+                    <Button Content="Clear" 
+                            Command="{Binding ClearSavedList_Command}"
+                            />
                 </StackPanel>
                 
 

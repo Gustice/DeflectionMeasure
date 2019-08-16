@@ -21,6 +21,7 @@ using AForge.Video.DirectShow;
 using Microsoft.Win32;
 
 using MeasureDeflection.Utils;
+using System.Reflection;
 
 
 // Known issues:
@@ -60,7 +61,6 @@ namespace MeasureDeflection
             }
         }
         #endregion
-
 
         #region GUI_Interface
         private BitmapImage _camImage;
@@ -200,12 +200,13 @@ namespace MeasureDeflection
             get { return _tipColorPickerBack; }
             set { _tipColorPickerBack = value; OnPropertyChanged(); }
         }
-        
+
         private FilterInfoCollection _videoCaptureDevices;
         /// <summary>
         /// Collection of available video devices
         /// </summary>
-        public FilterInfoCollection VideoCaptureDevices {
+        public FilterInfoCollection VideoCaptureDevices
+        {
             get { return _videoCaptureDevices; }
             set { _videoCaptureDevices = value; OnPropertyChanged(); }
         }
@@ -224,7 +225,20 @@ namespace MeasureDeflection
         Brush positiveButton = Brushes.LightGreen;
         Brush passiveButton = Brushes.LightGray;
         Brush negativeButton = Brushes.LightSalmon;
+
+        public ICommand LoadAvailableVideoSources_Command { get; set; }
+        public ICommand StartImageingAndProcessing_Command { get; set; }
+        public ICommand SampleSingleShotAndProcess_Command { get; set; }
+        public ICommand AnchorColorPicker_Command { get; set; }
+        public ICommand MovingTipColorPicker_Command { get; set; }
+        public ICommand PreloadImageAndProcess_Command { get; set; }
+        public ICommand SaveCurrentImage_Command { get; set; }
+        public ICommand SetAngleReference_Command { get; set; }
+        public ICommand SaveCurrentAngleToList_Command { get; set; }
+        public ICommand CopyListToClipboard_Command { get; set; }
+        public ICommand ClearSavedList_Command { get; set; }
         #endregion
+
 
         /// <summary>
         /// Image Processor of captured or loaded images
@@ -254,19 +268,34 @@ namespace MeasureDeflection
         public MainWindow()
         {
             InitializeComponent();
+            Processor = new ImageProcessor(PromptNewMessage_Handler);
 
-            Uri testFramePath = new Uri(@"D:\Arbeitsordner\CS\DeflectionMeasure\MeasureDeflection\MeasureDeflection\Files\Idle.jpg");
-            CamImage = new BitmapImage(testFramePath);
+            Assembly myAssembly = Assembly.GetExecutingAssembly();
+            // Loading included picture by reflection               Namespace ...     Subdir ... ImageName
+            Stream myStream = myAssembly.GetManifestResourceStream("MeasureDeflection.Pictures.Logo.png");
+            CamImage = ImageProcessor.Bitmap2BitmapImage(new System.Drawing.Bitmap(myStream));
 
             VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
             cbx_cams.SelectedIndex = _lastSelectedVideoSourceIdx = 0;
 
-            Processor = new ImageProcessor(PromptNewMessage_Handler);
             StartButtonColor = positiveButton;
             StartText = "Start";
             PickerRadius = colorPickerRadius;
             TargetToleranceFactor = startToleranceFactor;
             referenceDireectionVector = new Vector();
+
+
+            LoadAvailableVideoSources_Command = new RelayCommand(LoadAvailableVideoSources);
+            StartImageingAndProcessing_Command = new RelayCommand(StartImageingAndProcessing);
+            SampleSingleShotAndProcess_Command = new RelayCommand(SampleSingleShotAndProcess);
+            AnchorColorPicker_Command = new RelayCommand(AnchorColorPicker);
+            MovingTipColorPicker_Command = new RelayCommand(MovingTipColorPicker);
+            PreloadImageAndProcess_Command = new RelayCommand(PreloadImageAndProcess);
+            SaveCurrentImage_Command = new RelayCommand(SaveCurrentImage);
+            SetAngleReference_Command = new RelayCommand(SetAngleReference);
+            SaveCurrentAngleToList_Command = new RelayCommand(SaveCurrentAngleToList);
+            CopyListToClipboard_Command = new RelayCommand(CopyListToClipboard);
+            ClearSavedList_Command = new RelayCommand(ClearSavedList);
 
             DataContext = this;
         }
@@ -299,15 +328,11 @@ namespace MeasureDeflection
         #endregion
 
         #region GUI_UserEvents
-        /// <summary>
-        /// ComboBox is opend.
-        /// This triggers scan for available image caputre devices.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Cbx_cams_DropDownOpened(object sender, EventArgs e)
+
+
+        private void LoadAvailableVideoSources(object obj)
         {
-            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -315,9 +340,8 @@ namespace MeasureDeflection
         /// Depending on current mode either the capture should be started or stopped.
         /// Current mode is shown properly by naming the action on pressing.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_Start_Click(object sender, RoutedEventArgs e)
+        /// <param name="obj"></param>
+        private void StartImageingAndProcessing(object obj)
         {
             if (!isRunning)
             {
@@ -337,7 +361,7 @@ namespace MeasureDeflection
                 // This click stops catpure mode
                 isRunning = false;
                 CaptureDevice.SignalToStop();
-                
+
                 // Next click will start capture mode
                 StartText = "Start";
                 StartButtonColor = positiveButton;
@@ -348,9 +372,8 @@ namespace MeasureDeflection
         /// Triggers on capture event.
         /// This is only possible if capture mode is not already active
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_OneShot_Click(object sender, RoutedEventArgs e)
+        /// <param name="obj"></param>
+        private void SampleSingleShotAndProcess(object obj)
         {
             if (isRunning == false)
             {
@@ -361,11 +384,32 @@ namespace MeasureDeflection
         }
 
         /// <summary>
+        /// Set anchor properties (color and start position)
+        /// </summary>
+        /// <param name="obj"></param>
+        private void AnchorColorPicker(object obj)
+        {
+            ColorCaptureMode = PickerMode.getAnchor;
+            img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
+            AnchorColorPickerBack = positiveButton;
+        }
+
+        /// <summary>
+        /// Set moving tip properties (color and start position)
+        /// </summary>
+        /// <param name="obj"></param>
+        private void MovingTipColorPicker(object obj)
+        {
+            ColorCaptureMode = PickerMode.getTip;
+            img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
+            TipColorPickerBack = positiveButton;
+        }
+
+        /// <summary>
         /// Loads image from filesystem to analyse it rather than a freshly captured image
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_PreloadImage(object sender, RoutedEventArgs e)
+        /// <param name="obj"></param>
+        private void PreloadImageAndProcess(object obj)
         {
             OpenFileDialog picker = new OpenFileDialog();
             picker.InitialDirectory = defaultPath;
@@ -378,15 +422,14 @@ namespace MeasureDeflection
                 Uri testFramePath = new Uri(picker.FileName);
                 CamImage = new BitmapImage(testFramePath);
             }
-            ProcessImage(currentTolerance*3);
+            ProcessImage(currentTolerance * 3);
         }
 
         /// <summary>
         /// Saves current taken image for later use on the filesystem
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_SaveImageClick(object sender, RoutedEventArgs e)
+        /// <param name="obj"></param>
+        private void SaveCurrentImage(object obj)
         {
             var encoder = new JpegBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(img_CamStream.Source as BitmapImage));
@@ -405,29 +448,59 @@ namespace MeasureDeflection
         }
 
         /// <summary>
-        /// Set anchor properties (color and start position)
+        /// Sets zero-positiom reference to current position
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_Anchor_Click(object sender, RoutedEventArgs e)
+        /// <param name="obj"></param>
+        private void SetAngleReference(object obj)
         {
-            ColorCaptureMode = PickerMode.getAnchor;
-            img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
-            AnchorColorPickerBack = positiveButton;
+            CurrentAngle = 0;
+            referenceDireectionVector = currentDirectionVector;
         }
 
         /// <summary>
-        /// Set moving tip properties (color and start position)
-        /// Intendet to be optionally
+        /// Saves current angle and positions to formatted list
+        /// </summary>
+        /// <param name="obj"></param>
+        private void SaveCurrentAngleToList(object obj)
+        {
+            if (_sampleIteration <= 0)
+                DotPositions += $"Num\tAnchor x\t/y\tMoving x\t/y\tAngle\n";
+
+            DotPositions += $"{++_sampleIteration}\t{anchorPoint.X:F2}\t{anchorPoint.Y:F2}\t{movingTipPoint.X:F2}\t{movingTipPoint.Y:F2}\t{CurrentAngle:F3}\n";
+        }
+
+        /// <summary>
+        /// Copies formatted list to clipboard
+        /// </summary>
+        /// <param name="obj"></param>
+        private void CopyListToClipboard(object obj)
+        {
+            Clipboard.SetText(DotPositions);
+        }
+
+        /// <summary>
+        /// Clears formatted list
+        /// </summary>
+        /// <param name="obj"></param>
+        private void ClearSavedList(object obj)
+        {
+            DotPositions = "";
+            _sampleIteration = 0;
+        }
+
+
+
+        /// <summary>
+        /// ComboBox is opend.
+        /// This triggers scan for available image caputre devices.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void btn_MovingTip_Click(object sender, RoutedEventArgs e)
+        private void Cbx_cams_DropDownOpened(object sender, EventArgs e)
         {
-            ColorCaptureMode = PickerMode.getTip;
-            img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
-            TipColorPickerBack = positiveButton;
+            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
         }
+
 
         /// <summary>
         /// Mouse moves over Image event.
@@ -495,52 +568,6 @@ namespace MeasureDeflection
                 ColorCaptureMode = PickerMode.off;
             }
         }
-
-        /// <summary>
-        /// Sets zero-positiom reference to current position
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_SetReference(object sender, RoutedEventArgs e)
-        {
-            CurrentAngle = 0;
-            referenceDireectionVector = currentDirectionVector;
-        }
-
-        /// <summary>
-        /// Saves current angle and positions to formatted list
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_SaveCurrentPostion(object sender, RoutedEventArgs e)
-        {
-            if (_sampleIteration <= 0)
-                DotPositions += $"Num\tAnchor x\t/y\tMoving x\t/y\tAngle\n";
-
-            DotPositions += $"{++_sampleIteration}\t{anchorPoint.X:F2}\t{anchorPoint.Y:F2}\t{movingTipPoint.X:F2}\t{movingTipPoint.Y:F2}\t{CurrentAngle:F3}\n";
-        }
-
-        /// <summary>
-        /// Copies formatted list to clipboard
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btn_CopyListToClipBoard(object sender, RoutedEventArgs e)
-        {
-            Clipboard.SetText(DotPositions);
-        }
-
-        /// <summary>
-        /// Clears formatted list
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void bnt_ClearList(object sender, RoutedEventArgs e)
-        {
-            DotPositions = "";
-            _sampleIteration = 0;
-        }
-
         #endregion
 
         /// <summary>
@@ -732,4 +759,10 @@ namespace MeasureDeflection
         }
         #endregion
     }
+
+
+
+
+
+
 }

@@ -73,6 +73,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Utils\RelayCommand.cs" />
     <Compile Include="Utils\SmartColor.cs" />
     <Compile Include="Utils\UserPrompt.cs" />
     <Page Include="MainWindow.xaml">
@@ -117,6 +118,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="TestFrame.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Pictures\Logo.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
