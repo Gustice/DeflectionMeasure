@@ -24,15 +24,9 @@ using MeasureDeflection.Utils;
 using System.Reflection;
 
 
-// Known issues:
-// Color Radius plausiblistaion
-
 namespace MeasureDeflection
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window, INotifyPropertyChanged
+    public class MainWindowViewModel : INotifyPropertyChanged
     {
         #region Preferences
 
@@ -43,6 +37,7 @@ namespace MeasureDeflection
         const int skipFramesInContiunousMode = 15; // Results in roughly 2 Frames per Second
         const int skipFramesInOnShotMode = 15; // Results in roughly 2 Frames per Second
         #endregion
+
 
         #region INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
@@ -62,7 +57,66 @@ namespace MeasureDeflection
         }
         #endregion
 
-        #region GUI_Interface
+
+        public MainWindowViewModel()
+        {
+            Processor = new ImageProcessor(PromptNewMessage_Handler);
+
+            Assembly myAssembly = Assembly.GetExecutingAssembly();
+            // Loading included picture by reflection               Namespace ...     Subdir ... ImageName
+            Stream myStream = myAssembly.GetManifestResourceStream("MeasureDeflection.Pictures.Logo.png");
+            CamImage = ImageProcessor.Bitmap2BitmapImage(new System.Drawing.Bitmap(myStream));
+
+            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            _lastSelectedVideoSourceIdx = 0;
+
+            StartButtonColor = positiveButton;
+            StartText = "Start";
+            PickerRadius = colorPickerRadius;
+            TargetToleranceFactor = startToleranceFactor;
+            referenceDireectionVector = new Vector();
+
+            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+
+            StartButtonColor = positiveButton;
+            StartText = "Start";
+            PickerRadius = colorPickerRadius;
+            TargetToleranceFactor = startToleranceFactor;
+            referenceDireectionVector = new Vector();
+
+
+            StartImageingAndProcessing_Command = new RelayCommand(StartImageingAndProcessing);
+            SampleSingleShotAndProcess_Command = new RelayCommand(SampleSingleShotAndProcess);
+            AnchorColorPicker_Command = new RelayCommand(AnchorColorPicker);
+            MovingTipColorPicker_Command = new RelayCommand(MovingTipColorPicker);
+            PreloadImageAndProcess_Command = new RelayCommand(PreloadImageAndProcess);
+            SaveCurrentImage_Command = new RelayCommand(SaveCurrentImage);
+            SetAngleReference_Command = new RelayCommand(SetAngleReference);
+            SaveCurrentAngleToList_Command = new RelayCommand(SaveCurrentAngleToList);
+            CopyListToClipboard_Command = new RelayCommand(CopyListToClipboard);
+            ClearSavedList_Command = new RelayCommand(ClearSavedList);
+        }
+
+        #region GUI_Properties
+
+        private int _slectedVideoSourceIdx;
+        /// <summary>
+        /// Selected index in list of available video sources
+        /// </summary>
+        public int SlectedVideoSourceIdx
+        {
+            get { return _slectedVideoSourceIdx; }
+            set { _slectedVideoSourceIdx = value; }
+        }
+
+        private object _selectedVideoSource;
+
+        public object SelectedVideoSource
+        {
+            get { return _selectedVideoSource; }
+            set { _selectedVideoSource = value; }
+        }
+
         private BitmapImage _camImage;
         /// <summary>
         /// Camera-Image
@@ -226,18 +280,8 @@ namespace MeasureDeflection
         Brush passiveButton = Brushes.LightGray;
         Brush negativeButton = Brushes.LightSalmon;
 
-        public ICommand LoadAvailableVideoSources_Command { get; set; }
-        public ICommand StartImageingAndProcessing_Command { get; set; }
-        public ICommand SampleSingleShotAndProcess_Command { get; set; }
-        public ICommand AnchorColorPicker_Command { get; set; }
-        public ICommand MovingTipColorPicker_Command { get; set; }
-        public ICommand PreloadImageAndProcess_Command { get; set; }
-        public ICommand SaveCurrentImage_Command { get; set; }
-        public ICommand SetAngleReference_Command { get; set; }
-        public ICommand SaveCurrentAngleToList_Command { get; set; }
-        public ICommand CopyListToClipboard_Command { get; set; }
-        public ICommand ClearSavedList_Command { get; set; }
         #endregion
+
 
 
         /// <summary>
@@ -254,50 +298,12 @@ namespace MeasureDeflection
             get => _captureDevice;
             set
             {
-                if (_lastSelectedVideoSourceIdx != cbx_cams.SelectedIndex)
+                if (_lastSelectedVideoSourceIdx != SlectedVideoSourceIdx)
                     Processor.ResetInternals();
 
-                _lastSelectedVideoSourceIdx = cbx_cams.SelectedIndex;
+                _lastSelectedVideoSourceIdx = SlectedVideoSourceIdx;
                 _captureDevice = value;
             }
-        }
-
-        /// <summary>
-        /// Main Window setup
-        /// </summary>
-        public MainWindow()
-        {
-            InitializeComponent();
-            Processor = new ImageProcessor(PromptNewMessage_Handler);
-
-            Assembly myAssembly = Assembly.GetExecutingAssembly();
-            // Loading included picture by reflection               Namespace ...     Subdir ... ImageName
-            Stream myStream = myAssembly.GetManifestResourceStream("MeasureDeflection.Pictures.Logo.png");
-            CamImage = ImageProcessor.Bitmap2BitmapImage(new System.Drawing.Bitmap(myStream));
-
-            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-            cbx_cams.SelectedIndex = _lastSelectedVideoSourceIdx = 0;
-
-            StartButtonColor = positiveButton;
-            StartText = "Start";
-            PickerRadius = colorPickerRadius;
-            TargetToleranceFactor = startToleranceFactor;
-            referenceDireectionVector = new Vector();
-
-
-            LoadAvailableVideoSources_Command = new RelayCommand(LoadAvailableVideoSources);
-            StartImageingAndProcessing_Command = new RelayCommand(StartImageingAndProcessing);
-            SampleSingleShotAndProcess_Command = new RelayCommand(SampleSingleShotAndProcess);
-            AnchorColorPicker_Command = new RelayCommand(AnchorColorPicker);
-            MovingTipColorPicker_Command = new RelayCommand(MovingTipColorPicker);
-            PreloadImageAndProcess_Command = new RelayCommand(PreloadImageAndProcess);
-            SaveCurrentImage_Command = new RelayCommand(SaveCurrentImage);
-            SetAngleReference_Command = new RelayCommand(SetAngleReference);
-            SaveCurrentAngleToList_Command = new RelayCommand(SaveCurrentAngleToList);
-            CopyListToClipboard_Command = new RelayCommand(CopyListToClipboard);
-            ClearSavedList_Command = new RelayCommand(ClearSavedList);
-
-            DataContext = this;
         }
 
         #region FlowControl
@@ -327,12 +333,27 @@ namespace MeasureDeflection
 
         #endregion
 
-        #region GUI_UserEvents
+        #region GUI_Commands
+
+        public ICommand StartImageingAndProcessing_Command { get; set; }
+        public ICommand SampleSingleShotAndProcess_Command { get; set; }
+        public ICommand AnchorColorPicker_Command { get; set; }
+        public ICommand MovingTipColorPicker_Command { get; set; }
+        public ICommand PreloadImageAndProcess_Command { get; set; }
+        public ICommand SaveCurrentImage_Command { get; set; }
+        public ICommand SetAngleReference_Command { get; set; }
+        public ICommand SaveCurrentAngleToList_Command { get; set; }
+        public ICommand CopyListToClipboard_Command { get; set; }
+        public ICommand ClearSavedList_Command { get; set; }
 
 
-        private void LoadAvailableVideoSources(object obj)
+        /// <summary>
+        /// This triggers scan for available image caputre devices.
+        /// </summary>
+        /// <param name="obj"></param>
+        public void LoadAvailableVideoSources()
         {
-            throw new NotImplementedException();
+            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
         }
 
         /// <summary>
@@ -347,7 +368,7 @@ namespace MeasureDeflection
             {
                 // This click starts catpure mode
                 isRunning = true;
-                CaptureDevice = new VideoCaptureDevice((string)cbx_cams.SelectedValue);
+                CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
                 CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrame);
 
                 CaptureDevice.Start();
@@ -377,7 +398,7 @@ namespace MeasureDeflection
         {
             if (isRunning == false)
             {
-                CaptureDevice = new VideoCaptureDevice((string)cbx_cams.SelectedValue);
+                CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
                 CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrameOnce);
                 CaptureDevice.Start();
             }
@@ -390,7 +411,6 @@ namespace MeasureDeflection
         private void AnchorColorPicker(object obj)
         {
             ColorCaptureMode = PickerMode.getAnchor;
-            img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
             AnchorColorPickerBack = positiveButton;
         }
 
@@ -401,7 +421,6 @@ namespace MeasureDeflection
         private void MovingTipColorPicker(object obj)
         {
             ColorCaptureMode = PickerMode.getTip;
-            img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
             TipColorPickerBack = positiveButton;
         }
 
@@ -432,7 +451,7 @@ namespace MeasureDeflection
         private void SaveCurrentImage(object obj)
         {
             var encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(img_CamStream.Source as BitmapImage));
+            encoder.Frames.Add(BitmapFrame.Create(CamImage as BitmapImage));
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.FileName = "Sample###";
             dlg.DefaultExt = ".jpg"; // Default file extension
@@ -488,87 +507,8 @@ namespace MeasureDeflection
             _sampleIteration = 0;
         }
 
-
-
-        /// <summary>
-        /// ComboBox is opend.
-        /// This triggers scan for available image caputre devices.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Cbx_cams_DropDownOpened(object sender, EventArgs e)
-        {
-            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-        }
-
-
-        /// <summary>
-        /// Mouse moves over Image event.
-        /// Intendet to pick image colors if picker mode is active.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void camStreamMouseMove(object sender, MouseEventArgs e)
-        {
-            // Only if picker is currently active
-            if ((int)ColorCaptureMode > (int)PickerMode.off)
-            {
-                GetPositionAndColorInPreview();
-            }
-        }
-
-        /// <summary>
-        /// Mouse click-event during color picker mode
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Img_CamStream_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (ColorCaptureMode != PickerMode.off)
-            {
-                img_CamStream.MouseMove -= new MouseEventHandler(camStreamMouseMove);
-
-                Point clickPos = Mouse.GetPosition(img_CamStream);
-                Point pixelPos = GetPositionAndColorInPreview();
-                switch (ColorCaptureMode)
-                {
-                    case PickerMode.getAnchor:
-                        {
-                            _targets.Anchor.Centre = new ImageProcessor.BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
-                            _targets.Anchor.Color = new AForge.Imaging.RGB(AnchorColor.R, AnchorColor.G, AnchorColor.B);
-                            TipSelectionActive = true;
-
-                            ImageProcessor.BlobCentre anchor = new ImageProcessor.BlobCentre();
-                            ImageProcessor.BlobCentre movingTip = new ImageProcessor.BlobCentre();
-
-                            ImageSource img = Processor.SetAnchorProperty(CamImage, _targets.Anchor, out anchor, out movingTip);
-                            img.Freeze();
-                            ProcessedImage = img;
-                            currentTolerance = (int)(anchor.D * TargetToleranceFactor);
-                        }
-                        break;
-
-                    case PickerMode.getTip:
-                        {
-                            _targets.MovingTip.Centre = new ImageProcessor.BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
-                            _targets.MovingTip.Color = new AForge.Imaging.RGB(MovingTipColor.R, MovingTipColor.G, MovingTipColor.B);
-
-                            ImageProcessor.BlobCentre movingTip = new ImageProcessor.BlobCentre();
-                            ImageSource img = Processor.SetMovingTipProperty(CamImage, _targets.MovingTip, out movingTip);
-                            img.Freeze();
-                            ProcessedImage = img;
-                        }
-                        break;
-                }
-                AnchorColorPickerBack = passiveButton;
-                TipColorPickerBack = passiveButton;
-
-                ProcessImage(currentTolerance);
-
-                ColorCaptureMode = PickerMode.off;
-            }
-        }
         #endregion
+
 
         /// <summary>
         /// Event intended to be triggered if capture device provides a new image
@@ -616,28 +556,78 @@ namespace MeasureDeflection
         /// Gets pixel position in preview image and sets anchor and moving acording to the local color
         /// </summary>
         /// <returns></returns>
-        private Point GetPositionAndColorInPreview()
+        public Point GetPositionAndColorInPreview(Point hoverPos, Image imageFrame)
         {
-            BitmapSource bitmapSource = img_CamStream.Source as BitmapSource;
-            Image imageFrame = img_CamStream;
-            Point hoverPos = Mouse.GetPosition(img_CamStream);
-            Point pixelPos = GetXYPosInFrame(imageFrame, hoverPos);
+            Point pixelPos = new Point();
 
-            Color acvrgColor = ImageProcessor.GetAvarageColor(img_CamStream.Source as BitmapSource, (int)pixelPos.X, (int)pixelPos.Y, PickerRadius);
-
-            switch (ColorCaptureMode)
+            // Only if picker is currently active
+            if ((int)ColorCaptureMode > (int)PickerMode.off)
             {
-                case PickerMode.getAnchor:
-                    AnchorColor.SetColor(acvrgColor);
-                    MovingTipColor.SetColor(acvrgColor);
-                    break;
+                BitmapSource bitmapSource = CamImage as BitmapSource;
+                pixelPos = GetXYPosInFrame(imageFrame, hoverPos);
 
-                case PickerMode.getTip:
-                    MovingTipColor.SetColor(acvrgColor);
-                    break;
+                Color acvrgColor = ImageProcessor.GetAvarageColor(CamImage as BitmapSource, (int)pixelPos.X, (int)pixelPos.Y, PickerRadius);
+
+                switch (ColorCaptureMode)
+                {
+                    case PickerMode.getAnchor:
+                        AnchorColor.SetColor(acvrgColor);
+                        MovingTipColor.SetColor(acvrgColor);
+                        break;
+
+                    case PickerMode.getTip:
+                        MovingTipColor.SetColor(acvrgColor);
+                        break;
+                }
+
             }
 
             return pixelPos;
+        }
+
+        public void SetColorFromPositionInPreview(Point clickPos, Image imageFrame)
+        {
+            if (ColorCaptureMode != PickerMode.off)
+            {
+
+                Point pixelPos = GetPositionAndColorInPreview(clickPos, imageFrame);
+                switch (ColorCaptureMode)
+                {
+                    case PickerMode.getAnchor:
+                        {
+                            _targets.Anchor.Centre = new ImageProcessor.BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
+                            _targets.Anchor.Color = new AForge.Imaging.RGB(AnchorColor.R, AnchorColor.G, AnchorColor.B);
+                            TipSelectionActive = true;
+
+                            ImageProcessor.BlobCentre anchor = new ImageProcessor.BlobCentre();
+                            ImageProcessor.BlobCentre movingTip = new ImageProcessor.BlobCentre();
+
+                            ImageSource img = Processor.SetAnchorProperty(CamImage, _targets.Anchor, out anchor, out movingTip);
+                            img.Freeze();
+                            ProcessedImage = img;
+                            currentTolerance = (int)(anchor.D * TargetToleranceFactor);
+                        }
+                        break;
+
+                    case PickerMode.getTip:
+                        {
+                            _targets.MovingTip.Centre = new ImageProcessor.BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
+                            _targets.MovingTip.Color = new AForge.Imaging.RGB(MovingTipColor.R, MovingTipColor.G, MovingTipColor.B);
+
+                            ImageProcessor.BlobCentre movingTip = new ImageProcessor.BlobCentre();
+                            ImageSource img = Processor.SetMovingTipProperty(CamImage, _targets.MovingTip, out movingTip);
+                            img.Freeze();
+                            ProcessedImage = img;
+                        }
+                        break;
+                }
+                AnchorColorPickerBack = passiveButton;
+                TipColorPickerBack = passiveButton;
+
+                ProcessImage(currentTolerance);
+
+                ColorCaptureMode = PickerMode.off;
+            }
         }
 
         /// <summary>
@@ -759,10 +749,4 @@ namespace MeasureDeflection
         }
         #endregion
     }
-
-
-
-
-
-
 }

@@ -1,13 +1,13 @@
-﻿<Window x:Class="MeasureDeflection.MainWindow"
+﻿<Window x:Class="MeasureDeflection.MainWindowView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MeasureDeflection"
-    d:DataContext="{d:DesignInstance Type={x:Type local:MainWindow}}"
+        d:DataContext="{d:DesignInstance local:MainWindowViewModel}"
     mc:Ignorable="d"
-    Title="MainWindow" Height="650" Width="1000">
-   
+    Title="Deflection Measurement" Height="650" Width="1000">
+    
     <Window.Resources>
         <Style x:Key="DefaultStyle" TargetType="{x:Type FrameworkElement}">
             <Setter Property="Control.Margin" Value="5"/>
@@ -58,6 +58,8 @@
                           Name="cbx_cams"
                           Style="{StaticResource DefaultStyle}" 
                           ItemsSource="{Binding VideoCaptureDevices}"  
+                          SelectedIndex="{Binding SlectedVideoSourceIdx}"
+                          SelectedValue="{Binding SelectedVideoSource}"
                           DisplayMemberPath="Name"
                           SelectedValuePath="MonikerString"
                           DropDownOpened="Cbx_cams_DropDownOpened"
@@ -101,7 +103,8 @@
                         Name="SetAnchor"
                         Content="Set Achor"
                         Background="{Binding AnchorColorPickerBack}"
-                        Command="{Binding AnchorColorPicker_Command}"
+                        Command="{Binding AnchorColorPicker_Command}" Height="25" Margin="5,5,5,0" VerticalAlignment="Top"
+                        Click="btn_CoulorPicker_Click"
                         />
                 <Border Grid.Column="1" 
                         Grid.Row="0"

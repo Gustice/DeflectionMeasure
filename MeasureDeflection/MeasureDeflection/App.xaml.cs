@@ -13,6 +13,14 @@ namespace MeasureDeflection
     /// </summary>
     public partial class App : Application
     {
+        public MainWindowViewModel _mvvm { get; set; }
 
+        private void Application_Startup(object sender, StartupEventArgs e)
+        {
+            MainWindowViewModel mvvm = new MainWindowViewModel();
+            MainWindowView vm = new MainWindowView(mvvm);
+
+            vm.Show();
+        }
     }
 }
