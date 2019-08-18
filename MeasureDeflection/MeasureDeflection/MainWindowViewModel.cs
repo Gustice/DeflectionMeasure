@@ -70,22 +70,12 @@ namespace MeasureDeflection
             VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
             _lastSelectedVideoSourceIdx = 0;
 
-            StartButtonColor = positiveButton;
-            StartText = "Start";
             PickerRadius = colorPickerRadius;
             TargetToleranceFactor = startToleranceFactor;
             referenceDireectionVector = new Vector();
-
-            VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-
-            StartButtonColor = positiveButton;
-            StartText = "Start";
-            PickerRadius = colorPickerRadius;
-            TargetToleranceFactor = startToleranceFactor;
-            referenceDireectionVector = new Vector();
-
 
             StartImageingAndProcessing_Command = new RelayCommand(StartImageingAndProcessing);
+            StopImageingAndProcessing_Command = new RelayCommand(StopImageingAndProcessing);
             SampleSingleShotAndProcess_Command = new RelayCommand(SampleSingleShotAndProcess);
             AnchorColorPicker_Command = new RelayCommand(AnchorColorPicker);
             MovingTipColorPicker_Command = new RelayCommand(MovingTipColorPicker);
@@ -135,26 +125,6 @@ namespace MeasureDeflection
         {
             get { return _processedImage; }
             set { _processedImage = value; OnPropertyChanged(); }
-        }
-
-        private Brush _startColor;
-        /// <summary>
-        /// Color of Start/Stop button
-        /// </summary>
-        public Brush StartButtonColor
-        {
-            get { return _startColor; }
-            set { _startColor = value; OnPropertyChanged(); }
-        }
-
-        private string _startText;
-        /// <summary>
-        /// Text of Start/Stop button
-        /// </summary>
-        public string StartText
-        {
-            get { return _startText; }
-            set { _startText = value; OnPropertyChanged(); }
         }
 
         private string _angleOutput;
@@ -233,28 +203,6 @@ namespace MeasureDeflection
             set { _pickerRadius = value; OnPropertyChanged(); }
         }
 
-        private Brush _anchorColorPickerBack;
-        /// <summary>
-        /// Color of button to pick anchor color.
-        /// Indicates active or passive state
-        /// </summary>
-        public Brush AnchorColorPickerBack
-        {
-            get { return _anchorColorPickerBack; }
-            set { _anchorColorPickerBack = value; OnPropertyChanged(); }
-        }
-
-        private Brush _tipColorPickerBack;
-        /// <summary>
-        /// Color of button to pick moving tip color.
-        /// Indicates active or passive state
-        /// </summary>
-        public Brush TipColorPickerBack
-        {
-            get { return _tipColorPickerBack; }
-            set { _tipColorPickerBack = value; OnPropertyChanged(); }
-        }
-
         private FilterInfoCollection _videoCaptureDevices;
         /// <summary>
         /// Collection of available video devices
@@ -274,12 +222,6 @@ namespace MeasureDeflection
             get { return _tipSelectionActive; }
             set { _tipSelectionActive = value; OnPropertyChanged(); }
         }
-
-        // Some predefined colors
-        Brush positiveButton = Brushes.LightGreen;
-        Brush passiveButton = Brushes.LightGray;
-        Brush negativeButton = Brushes.LightSalmon;
-
         #endregion
 
 
@@ -308,7 +250,9 @@ namespace MeasureDeflection
 
         #region FlowControl
 
-        bool isRunning = false;
+        bool _isRunning = false;
+        public bool IsRunning { get => _isRunning; set => _isRunning = value; }
+
         PickerMode ColorCaptureMode = PickerMode.off;
         ImageProcessor.AnchorTipPair _targets = new ImageProcessor.AnchorTipPair();
         Vector currentDirectionVector;
@@ -336,6 +280,7 @@ namespace MeasureDeflection
         #region GUI_Commands
 
         public ICommand StartImageingAndProcessing_Command { get; set; }
+        public ICommand StopImageingAndProcessing_Command { get; set; }
         public ICommand SampleSingleShotAndProcess_Command { get; set; }
         public ICommand AnchorColorPicker_Command { get; set; }
         public ICommand MovingTipColorPicker_Command { get; set; }
@@ -356,38 +301,20 @@ namespace MeasureDeflection
             VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
         }
 
-        /// <summary>
-        /// Start/Stop-button was pressed.
-        /// Depending on current mode either the capture should be started or stopped.
-        /// Current mode is shown properly by naming the action on pressing.
-        /// </summary>
-        /// <param name="obj"></param>
         private void StartImageingAndProcessing(object obj)
         {
-            if (!isRunning)
-            {
-                // This click starts catpure mode
-                isRunning = true;
-                CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
-                CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrame);
-
-                CaptureDevice.Start();
-
-                // Next click will stop capture mode
-                StartText = "Stop";
-                StartButtonColor = negativeButton;
-            }
-            else
-            {
-                // This click stops catpure mode
-                isRunning = false;
-                CaptureDevice.SignalToStop();
-
-                // Next click will start capture mode
-                StartText = "Start";
-                StartButtonColor = positiveButton;
-            }
+            CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
+            CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrame);
+            CaptureDevice.Start();
         }
+
+        private void StopImageingAndProcessing(object obj)
+        {
+            CaptureDevice.SignalToStop();
+
+        }
+
+
 
         /// <summary>
         /// Triggers on capture event.
@@ -396,7 +323,7 @@ namespace MeasureDeflection
         /// <param name="obj"></param>
         private void SampleSingleShotAndProcess(object obj)
         {
-            if (isRunning == false)
+            if (_isRunning == false)
             {
                 CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
                 CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrameOnce);
@@ -411,7 +338,6 @@ namespace MeasureDeflection
         private void AnchorColorPicker(object obj)
         {
             ColorCaptureMode = PickerMode.getAnchor;
-            AnchorColorPickerBack = positiveButton;
         }
 
         /// <summary>
@@ -421,7 +347,6 @@ namespace MeasureDeflection
         private void MovingTipColorPicker(object obj)
         {
             ColorCaptureMode = PickerMode.getTip;
-            TipColorPickerBack = positiveButton;
         }
 
         /// <summary>
@@ -552,6 +477,7 @@ namespace MeasureDeflection
             ProcessImage(currentTolerance);
         }
 
+
         /// <summary>
         /// Gets pixel position in preview image and sets anchor and moving acording to the local color
         /// </summary>
@@ -621,8 +547,6 @@ namespace MeasureDeflection
                         }
                         break;
                 }
-                AnchorColorPickerBack = passiveButton;
-                TipColorPickerBack = passiveButton;
 
                 ProcessImage(currentTolerance);
 

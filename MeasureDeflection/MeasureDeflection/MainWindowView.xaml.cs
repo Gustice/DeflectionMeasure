@@ -65,9 +65,28 @@ namespace MeasureDeflection
             _mvvm.LoadAvailableVideoSources();
             cbx_cams.SelectedIndex = 0;
 
+            StartStopButton.Content = "Start";
+            StartStopButton.Background = positiveButton;
+
         }
 
+        #region GUI_Properties
+
+        // Some predefined colors
+        Brush positiveButton = Brushes.LightGreen;
+        Brush passiveButton = Brushes.LightGray;
+        Brush negativeButton = Brushes.LightSalmon;
+
+        #endregion
+
+
         #region GUI_UserEvents
+
+
+        #endregion
+
+
+
         /// <summary>
         /// ComboBox is opend.
         /// This triggers scan for available image caputre devices.
@@ -94,6 +113,22 @@ namespace MeasureDeflection
         private void btn_CoulorPicker_Click(object sender, RoutedEventArgs e)
         {
             img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
+
+            Button btn = (sender as Button);
+            switch (btn.Name)
+            {
+                case "SetAnchor":
+                    SetAnchor.Background = positiveButton;
+                    break;
+
+                case "SetTip":
+                    SetTip.Background = positiveButton;
+                    break;
+
+                default:
+                    throw new Exception($"Click event source {btn.Name} was not considered hier");
+                    break;
+            }
         }
 
         /// <summary>
@@ -105,9 +140,48 @@ namespace MeasureDeflection
         {
             img_CamStream.MouseMove -= new MouseEventHandler(camStreamMouseMove);
             _mvvm.SetColorFromPositionInPreview(Mouse.GetPosition(img_CamStream), img_CamStream);
+            SetAnchor.Background = passiveButton;
+            SetTip.Background = passiveButton;
         }
 
-        #endregion
+        /// <summary>
+        /// Starts-button was pressed.
+        /// Depending on current mode either the capture should be started or stopped.
+        /// Current mode is shown properly by naming the action on pressing.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btn_StartStopButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_mvvm.IsRunning)
+            {
+                // This click starts catpure mode
+                _mvvm.IsRunning = true;
+
+                 _mvvm.StartImageingAndProcessing_Command.Execute(null);
+
+                // Next click will stop capture mode
+                StartStopButton.Content = "Stop";
+                StartStopButton.Background= negativeButton;
+            }
+            else
+            {
+                // This click stops catpure mode
+                _mvvm.IsRunning = false;
+
+                _mvvm.StopImageingAndProcessing_Command.Execute(null);
+
+                // Next click will start capture mode
+                StartStopButton.Content = "Start";
+                StartStopButton.Background = positiveButton;
+            }
+
+
+
+        }
+
+
+
     }
 
 

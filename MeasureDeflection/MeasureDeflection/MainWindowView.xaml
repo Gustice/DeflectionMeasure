@@ -7,7 +7,7 @@
         d:DataContext="{d:DesignInstance local:MainWindowViewModel}"
     mc:Ignorable="d"
     Title="Deflection Measurement" Height="650" Width="1000">
-    
+
     <Window.Resources>
         <Style x:Key="DefaultStyle" TargetType="{x:Type FrameworkElement}">
             <Setter Property="Control.Margin" Value="5"/>
@@ -65,9 +65,9 @@
                           DropDownOpened="Cbx_cams_DropDownOpened"
                       />
                 <Button Grid.Column="1" 
+                        Name="StartStopButton"
                         Content="{Binding StartText, FallbackValue='Start'}"
-                        Background="{Binding StartButtonColor}"
-                        Command="{Binding StartImageingAndProcessing_Command}"
+                        Click="btn_StartStopButton_Click"
                     />
                 <Button Grid.Column="2"
                         Content="OneShot"
@@ -102,8 +102,7 @@
                         Grid.Row="0"
                         Name="SetAnchor"
                         Content="Set Achor"
-                        Background="{Binding AnchorColorPickerBack}"
-                        Command="{Binding AnchorColorPicker_Command}" Height="25" Margin="5,5,5,0" VerticalAlignment="Top"
+                        Command="{Binding AnchorColorPicker_Command}" Margin="5"
                         Click="btn_CoulorPicker_Click"
                         />
                 <Border Grid.Column="1" 
@@ -132,14 +131,14 @@
                              Width="80"/>
                     </StackPanel>
                 </Border>
-                
+
                 <Button Grid.Column="0"
                     Grid.Row="1"
                     Name="SetTip"
                     Content="Set Moving Tip"
                     Command="{Binding MovingTipColorPicker_Command}"
-                    Background="{Binding TipColorPickerBack}"
                     IsEnabled="{Binding TipSelectionActive}"
+                    Click="btn_CoulorPicker_Click"
                     />
                 <Border Grid.Column="1" 
                         Grid.Row="1"
@@ -205,7 +204,7 @@
                         Grid.Row="0"
                         >
             </StackPanel>
-            
+
             <Border Grid.Column="1" 
                     Grid.Row="1" 
                     BorderThickness="1"
@@ -295,7 +294,7 @@
                          VerticalScrollBarVisibility="Visible"
                          MaxHeight="80"
                          Text="{Binding DotPositions}"/>
-                
+
                 <StackPanel Grid.Column="1" Orientation="Vertical">
                     <Button Content="Save dot" 
                             Command="{Binding SaveCurrentAngleToList_Command}"
@@ -307,7 +306,7 @@
                             Command="{Binding ClearSavedList_Command}"
                             />
                 </StackPanel>
-                
+
 
             </Grid>
         </Grid>
