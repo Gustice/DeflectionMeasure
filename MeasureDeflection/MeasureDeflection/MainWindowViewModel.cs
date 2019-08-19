@@ -57,7 +57,9 @@ namespace MeasureDeflection
         }
         #endregion
 
-
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public MainWindowViewModel()
         {
             Processor = new ImageProcessor(PromptNewMessage_Handler);
@@ -301,6 +303,10 @@ namespace MeasureDeflection
             VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
         }
 
+        /// <summary>
+        /// Starts contiunous imaging and processing from selected video source
+        /// </summary>
+        /// <param name="obj"></param>
         private void StartImageingAndProcessing(object obj)
         {
             CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
@@ -308,13 +314,14 @@ namespace MeasureDeflection
             CaptureDevice.Start();
         }
 
+        /// <summary>
+        /// Stop contiunous imaging and processing
+        /// </summary>
+        /// <param name="obj"></param>
         private void StopImageingAndProcessing(object obj)
         {
             CaptureDevice.SignalToStop();
-
         }
-
-
 
         /// <summary>
         /// Triggers on capture event.
@@ -511,6 +518,12 @@ namespace MeasureDeflection
             return pixelPos;
         }
 
+        /// <summary>
+        /// Colorpicker function.
+        /// The current position in the image is used to set the selected color.
+        /// </summary>
+        /// <param name="clickPos"></param>
+        /// <param name="imageFrame"></param>
         public void SetColorFromPositionInPreview(Point clickPos, Image imageFrame)
         {
             if (ColorCaptureMode != PickerMode.off)

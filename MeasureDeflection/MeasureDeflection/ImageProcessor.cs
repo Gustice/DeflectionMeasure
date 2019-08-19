@@ -56,6 +56,9 @@ namespace MeasureDeflection
         SearchProfile lastAnchorTarget;
         SearchProfile lastMovingTipTarget;
 
+        /// <summary>
+        /// Reset internal to get a clean object to start a new image processing approach
+        /// </summary>
         public void ResetInternals()
         {
             Operation = OperationMode.missingData;

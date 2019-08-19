@@ -67,26 +67,15 @@ namespace MeasureDeflection
 
             StartStopButton.Content = "Start";
             StartStopButton.Background = positiveButton;
-
         }
-
-        #region GUI_Properties
 
         // Some predefined colors
         Brush positiveButton = Brushes.LightGreen;
         Brush passiveButton = Brushes.LightGray;
         Brush negativeButton = Brushes.LightSalmon;
 
-        #endregion
-
 
         #region GUI_UserEvents
-
-
-        #endregion
-
-
-
         /// <summary>
         /// ComboBox is opend.
         /// This triggers scan for available image caputre devices.
@@ -109,7 +98,11 @@ namespace MeasureDeflection
             _mvvm.GetPositionAndColorInPreview(Mouse.GetPosition(img_CamStream), img_CamStream);
         }
 
-
+        /// <summary>
+        /// Button click event for color picking. The hit button is supposed to become green.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btn_CoulorPicker_Click(object sender, RoutedEventArgs e)
         {
             img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
@@ -175,18 +168,8 @@ namespace MeasureDeflection
                 StartStopButton.Content = "Start";
                 StartStopButton.Background = positiveButton;
             }
-
-
-
         }
-
-
+        #endregion
 
     }
-
-
-
-
-
-
 }

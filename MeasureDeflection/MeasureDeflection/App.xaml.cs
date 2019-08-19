@@ -17,8 +17,8 @@ namespace MeasureDeflection
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            MainWindowViewModel mvvm = new MainWindowViewModel();
-            MainWindowView vm = new MainWindowView(mvvm);
+            _mvvm = new MainWindowViewModel();
+            MainWindowView vm = new MainWindowView(_mvvm);
 
             vm.Show();
         }
