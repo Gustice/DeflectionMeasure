@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MeasureDeflection.Utils;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -17,7 +18,8 @@ namespace MeasureDeflection
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            _mvvm = new MainWindowViewModel();
+            var fHandler = new FileHandler();
+            _mvvm = new MainWindowViewModel(fHandler);
             MainWindowView vm = new MainWindowView(_mvvm);
 
             vm.Show();

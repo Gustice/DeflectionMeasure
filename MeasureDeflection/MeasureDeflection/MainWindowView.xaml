@@ -71,7 +71,8 @@
                     />
                 <Button Grid.Column="2"
                         Content="OneShot"
-                        Command="{Binding SampleSingleShotAndProcess_Command}"
+                        Command="{Binding ImageProcessing_Command}"
+                        CommandParameter="Sample"
                         />
             </Grid>
 
@@ -285,25 +286,40 @@
                     <ColumnDefinition Width="3*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" 
-                         HorizontalAlignment="Stretch"
-                         VerticalAlignment="Stretch"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         IsReadOnly="True"
-                         VerticalScrollBarVisibility="Visible"
-                         MaxHeight="80"
-                         Text="{Binding DotPositions}"/>
+                <ListView Grid.Column="0"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          MaxHeight="80"
+                          ItemsSource="{Binding DotPosition}"
+                          >
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn>
+                                
+                            </GridViewColumn>
+                            <GridViewColumn Header="No" Width="40" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="Anchor X" Width="60" DisplayMemberBinding="{Binding AnchorX}" />
+                            <GridViewColumn Header="Anchor Y" Width="60" DisplayMemberBinding="{Binding AnchorY}" />
+                            <GridViewColumn Header="Tip X" Width="60" DisplayMemberBinding="{Binding TipX}" />
+                            <GridViewColumn Header="Tip Y" Width="60" DisplayMemberBinding="{Binding TipY}" />
+                            <GridViewColumn Header="Angle" Width="50" DisplayMemberBinding="{Binding Angle}" />
+                        </GridView>
+                    </ListView.View>
+
+                </ListView>
 
                 <StackPanel Grid.Column="1" Orientation="Vertical">
                     <Button Content="Save dot" 
-                            Command="{Binding SaveCurrentAngleToList_Command}"
+                            Command="{Binding AngleList_Command}"
+                            CommandParameter="Save"
                             />
                     <Button Content="Copy list" 
-                            Command="{Binding CopyListToClipboard_Command}"
+                            Command="{Binding AngleList_Command}"
+                            CommandParameter="Copy"
                             />
                     <Button Content="Clear" 
-                            Command="{Binding ClearSavedList_Command}"
+                            Command="{Binding AngleList_Command}"
+                            CommandParameter="Clear"
                             />
                 </StackPanel>
 

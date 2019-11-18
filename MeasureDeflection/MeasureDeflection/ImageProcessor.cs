@@ -281,7 +281,9 @@ namespace MeasureDeflection
         private Blob ScanTargetBlob(BlobCentre anchorTarget, Blob[] blobs, int tolerance, out Blob[] remeins)
         {
             Blob target = null;
-            remeins = new Blob[blobs.Length - 1];
+
+            List<Blob> rest = new List<Blob>();
+            
             int j = 0;
             foreach (Blob blob in blobs)
             {
@@ -296,12 +298,11 @@ namespace MeasureDeflection
                 }
                 else
                 {
-                    if (j < remeins.Length)
-                    {
-                        remeins[j++] = blob;
-                    }
+                    rest.Add(blob);
                 }
             }
+
+            remeins = rest.ToArray();
             return target;
         }
 

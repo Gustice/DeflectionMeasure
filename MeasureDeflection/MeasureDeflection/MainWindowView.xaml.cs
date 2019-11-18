@@ -151,7 +151,7 @@ namespace MeasureDeflection
                 // This click starts catpure mode
                 _mvvm.IsRunning = true;
 
-                 _mvvm.StartImageingAndProcessing_Command.Execute(null);
+                 _mvvm.ImageProcessing_Command.Execute("Start");
 
                 // Next click will stop capture mode
                 StartStopButton.Content = "Stop";
@@ -162,7 +162,7 @@ namespace MeasureDeflection
                 // This click stops catpure mode
                 _mvvm.IsRunning = false;
 
-                _mvvm.StopImageingAndProcessing_Command.Execute(null);
+                _mvvm.ImageProcessing_Command.Execute("Stop");
 
                 // Next click will start capture mode
                 StartStopButton.Content = "Start";

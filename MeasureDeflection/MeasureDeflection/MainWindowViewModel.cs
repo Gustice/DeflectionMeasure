@@ -22,7 +22,18 @@ using Microsoft.Win32;
 
 using MeasureDeflection.Utils;
 using System.Reflection;
+using MeasureDeflection.Utils.Interfaces;
+using System.Collections.ObjectModel;
 
+
+
+// @todo:   Add Download-Link to AForgenet
+//          http://www.aforgenet.com/framework/downloads.html
+
+// @todo:   NUnit-TestFramework einarbeitn
+//          FakeItEasy
+//          PrimsUnity anschauen
+//          Resharper
 
 namespace MeasureDeflection
 {
@@ -36,8 +47,8 @@ namespace MeasureDeflection
         const double startToleranceFactor = 3.0;
         const int skipFramesInContiunousMode = 15; // Results in roughly 2 Frames per Second
         const int skipFramesInOnShotMode = 15; // Results in roughly 2 Frames per Second
+        private readonly IFileHandler _fHandler;
         #endregion
-
 
         #region INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
@@ -60,7 +71,7 @@ namespace MeasureDeflection
         /// <summary>
         /// Constructor
         /// </summary>
-        public MainWindowViewModel()
+        public MainWindowViewModel(IFileHandler fHandler)
         {
             Processor = new ImageProcessor(PromptNewMessage_Handler);
 
@@ -76,17 +87,15 @@ namespace MeasureDeflection
             TargetToleranceFactor = startToleranceFactor;
             referenceDireectionVector = new Vector();
 
-            StartImageingAndProcessing_Command = new RelayCommand(StartImageingAndProcessing);
-            StopImageingAndProcessing_Command = new RelayCommand(StopImageingAndProcessing);
-            SampleSingleShotAndProcess_Command = new RelayCommand(SampleSingleShotAndProcess);
+            ImageProcessing_Command = new RelayCommand(ImageProcessingAction);
             AnchorColorPicker_Command = new RelayCommand(AnchorColorPicker);
             MovingTipColorPicker_Command = new RelayCommand(MovingTipColorPicker);
             PreloadImageAndProcess_Command = new RelayCommand(PreloadImageAndProcess);
             SaveCurrentImage_Command = new RelayCommand(SaveCurrentImage);
             SetAngleReference_Command = new RelayCommand(SetAngleReference);
-            SaveCurrentAngleToList_Command = new RelayCommand(SaveCurrentAngleToList);
-            CopyListToClipboard_Command = new RelayCommand(CopyListToClipboard);
-            ClearSavedList_Command = new RelayCommand(ClearSavedList);
+            AngleList_Command = new RelayCommand(AngleListAction);
+            _fHandler = fHandler;
+            _fHandler.DefaultPath = defaultPath;
         }
 
         #region GUI_Properties
@@ -139,16 +148,10 @@ namespace MeasureDeflection
             set { _angleOutput = value; OnPropertyChanged(); }
         }
 
-
-        private string _dotPositions;
         /// <summary>
         /// Formatted List of saved DotPositions
         /// </summary>
-        public string DotPositions
-        {
-            get { return _dotPositions; }
-            set { _dotPositions = value; OnPropertyChanged(); }
-        }
+        public ObservableCollection<DotSamples> DotPosition { get; set; } = new ObservableCollection<DotSamples>();
 
         private string _anchorPixelPosition;
         /// <summary>
@@ -226,8 +229,6 @@ namespace MeasureDeflection
         }
         #endregion
 
-
-
         /// <summary>
         /// Image Processor of captured or loaded images
         /// </summary>
@@ -281,17 +282,13 @@ namespace MeasureDeflection
 
         #region GUI_Commands
 
-        public ICommand StartImageingAndProcessing_Command { get; set; }
-        public ICommand StopImageingAndProcessing_Command { get; set; }
-        public ICommand SampleSingleShotAndProcess_Command { get; set; }
+        public ICommand ImageProcessing_Command { get; set; }
         public ICommand AnchorColorPicker_Command { get; set; }
         public ICommand MovingTipColorPicker_Command { get; set; }
         public ICommand PreloadImageAndProcess_Command { get; set; }
         public ICommand SaveCurrentImage_Command { get; set; }
         public ICommand SetAngleReference_Command { get; set; }
-        public ICommand SaveCurrentAngleToList_Command { get; set; }
-        public ICommand CopyListToClipboard_Command { get; set; }
-        public ICommand ClearSavedList_Command { get; set; }
+        public ICommand AngleList_Command { get; set; }
 
 
         /// <summary>
@@ -304,38 +301,35 @@ namespace MeasureDeflection
         }
 
         /// <summary>
-        /// Starts contiunous imaging and processing from selected video source
+        /// Imaging and processing related command
         /// </summary>
         /// <param name="obj"></param>
-        private void StartImageingAndProcessing(object obj)
+        private void ImageProcessingAction(object obj)
         {
-            CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
-            CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrame);
-            CaptureDevice.Start();
-        }
+            string action = (string)obj;
 
-        /// <summary>
-        /// Stop contiunous imaging and processing
-        /// </summary>
-        /// <param name="obj"></param>
-        private void StopImageingAndProcessing(object obj)
-        {
-            CaptureDevice.SignalToStop();
-        }
-
-        /// <summary>
-        /// Triggers on capture event.
-        /// This is only possible if capture mode is not already active
-        /// </summary>
-        /// <param name="obj"></param>
-        private void SampleSingleShotAndProcess(object obj)
-        {
-            if (_isRunning == false)
+            switch (action)
             {
-                CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
-                CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrameOnce);
-                CaptureDevice.Start();
+                case "Start":
+                    CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
+                    CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrame);
+                    CaptureDevice.Start();
+                    break;
+
+                case "Stop": CaptureDevice.SignalToStop(); break;
+
+                case "Sample":
+                    if (_isRunning == false)
+                    {
+                        CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
+                        CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrameOnce);
+                        CaptureDevice.Start();
+                    }
+                    break;
+
+                default: throw new Exception("This command is unknown");
             }
+
         }
 
         /// <summary>
@@ -362,17 +356,11 @@ namespace MeasureDeflection
         /// <param name="obj"></param>
         private void PreloadImageAndProcess(object obj)
         {
-            OpenFileDialog picker = new OpenFileDialog();
-            picker.InitialDirectory = defaultPath;
-            picker.DefaultExt = ".jpg";
-            picker.Filter = "JPeg Image|*.jpg|Bitmap Image|*.bmp|Gif Image|*.gif|PNG Image|*.png";
+            var newImage = _fHandler.LoadImage();
+            if (newImage == null)
+                return;
 
-            bool? result = picker.ShowDialog();
-            if (result == true)
-            {
-                Uri testFramePath = new Uri(picker.FileName);
-                CamImage = new BitmapImage(testFramePath);
-            }
+            CamImage = newImage;
             ProcessImage(currentTolerance * 3);
         }
 
@@ -382,20 +370,7 @@ namespace MeasureDeflection
         /// <param name="obj"></param>
         private void SaveCurrentImage(object obj)
         {
-            var encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(CamImage as BitmapImage));
-            SaveFileDialog dlg = new SaveFileDialog();
-            dlg.FileName = "Sample###";
-            dlg.DefaultExt = ".jpg"; // Default file extension
-            dlg.Filter = "JPeg Image|*.jpg|Bitmap Image|*.bmp|Gif Image|*.gif";
-
-            if (dlg.ShowDialog() == true)
-            {
-                using (var stream = dlg.OpenFile())
-                {
-                    encoder.Save(stream);
-                }
-            }
+            _fHandler.SaveImage(CamImage);
         }
 
         /// <summary>
@@ -408,37 +383,30 @@ namespace MeasureDeflection
             referenceDireectionVector = currentDirectionVector;
         }
 
-        /// <summary>
-        /// Saves current angle and positions to formatted list
-        /// </summary>
-        /// <param name="obj"></param>
-        private void SaveCurrentAngleToList(object obj)
-        {
-            if (_sampleIteration <= 0)
-                DotPositions += $"Num\tAnchor x\t/y\tMoving x\t/y\tAngle\n";
-
-            DotPositions += $"{++_sampleIteration}\t{anchorPoint.X:F2}\t{anchorPoint.Y:F2}\t{movingTipPoint.X:F2}\t{movingTipPoint.Y:F2}\t{CurrentAngle:F3}\n";
-        }
 
         /// <summary>
-        /// Copies formatted list to clipboard
+        /// Command related to DotList
         /// </summary>
-        /// <param name="obj"></param>
-        private void CopyListToClipboard(object obj)
+        private void AngleListAction(object obj)
         {
-            Clipboard.SetText(DotPositions);
-        }
+            string action = (string)obj;
 
-        /// <summary>
-        /// Clears formatted list
-        /// </summary>
-        /// <param name="obj"></param>
-        private void ClearSavedList(object obj)
-        {
-            DotPositions = "";
-            _sampleIteration = 0;
-        }
+            switch (action)
+            {
+                case "Save": DotPosition.Add(new DotSamples(DotPosition.Count, anchorPoint.X, anchorPoint.Y, movingTipPoint.X, movingTipPoint.Y, CurrentAngle)); break;
 
+                case "Copy":
+                    string outTable = "Sample\tAnchor-X\ttAnchor-Y\tTip-X\tTip-Y\tAngle" + Environment.NewLine;
+                    foreach (var item in DotPosition)
+                        outTable += item.ToString() + Environment.NewLine;
+                    Clipboard.SetText(outTable);
+                    break;
+
+                case "Clear": DotPosition.Clear(); break;
+
+                default: throw new Exception("This command is unknown");
+            }
+        }
         #endregion
 
 
@@ -484,7 +452,6 @@ namespace MeasureDeflection
             ProcessImage(currentTolerance);
         }
 
-
         /// <summary>
         /// Gets pixel position in preview image and sets anchor and moving acording to the local color
         /// </summary>
@@ -497,7 +464,7 @@ namespace MeasureDeflection
             if ((int)ColorCaptureMode > (int)PickerMode.off)
             {
                 BitmapSource bitmapSource = CamImage as BitmapSource;
-                pixelPos = GetXYPosInFrame(imageFrame, hoverPos);
+                pixelPos = ImageHelper.GetXYPosInFrame(imageFrame, hoverPos);
 
                 Color acvrgColor = ImageProcessor.GetAvarageColor(CamImage as BitmapSource, (int)pixelPos.X, (int)pixelPos.Y, PickerRadius);
 
@@ -512,7 +479,6 @@ namespace MeasureDeflection
                         MovingTipColor.SetColor(acvrgColor);
                         break;
                 }
-
             }
 
             return pixelPos;
@@ -565,36 +531,6 @@ namespace MeasureDeflection
 
                 ColorCaptureMode = PickerMode.off;
             }
-        }
-
-        /// <summary>
-        /// Get pixel x and y position of mouse cursor relativ to an certain image
-        /// </summary>
-        /// <param name="imageFrame"></param>
-        /// <param name="hoverPos"></param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        private static Point GetXYPosInFrame(Image imageFrame, Point hoverPos)
-        {
-            BitmapSource bitmapSource = imageFrame.Source as BitmapSource;
-            double x, y;
-
-            x = hoverPos.X;
-            x *= bitmapSource.PixelWidth / imageFrame.ActualWidth;
-            if ((int)x > bitmapSource.PixelWidth - 1)
-                x = bitmapSource.PixelWidth - 1;
-            else if (x < 0)
-                x = 0;
-
-            y = hoverPos.Y;
-            y *= bitmapSource.PixelHeight / imageFrame.ActualHeight;
-            if ((int)y > bitmapSource.PixelHeight - 1)
-                y = bitmapSource.PixelHeight - 1;
-            else if (y < 0)
-                y = 0;
-
-            Point pos = new Point(x, y);
-            return pos;
         }
 
         /// <summary>
@@ -686,4 +622,6 @@ namespace MeasureDeflection
         }
         #endregion
     }
+
+
 }

@@ -73,7 +73,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Utils\DotSamples.cs" />
+    <Compile Include="Utils\FileHandler.cs" />
     <Compile Include="MainWindowViewModel.cs" />
+    <Compile Include="Utils\ImageHelper.cs" />
+    <Compile Include="Utils\Interfaces\IFileHandler.cs" />
     <Compile Include="Utils\RelayCommand.cs" />
     <Compile Include="Utils\SmartColor.cs" />
     <Compile Include="Utils\UserPrompt.cs" />
