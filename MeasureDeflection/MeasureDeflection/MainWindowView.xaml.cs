@@ -80,8 +80,6 @@ namespace MeasureDeflection
         /// ComboBox is opend.
         /// This triggers scan for available image caputre devices.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void Cbx_cams_DropDownOpened(object sender, EventArgs e)
         {
             _mvvm.LoadAvailableVideoSources();
@@ -91,8 +89,6 @@ namespace MeasureDeflection
         /// Mouse moves over Image event.
         /// Intendet to pick image colors if picker mode is active.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void camStreamMouseMove(object sender, MouseEventArgs e)
         {
             _mvvm.GetPositionAndColorInPreview(Mouse.GetPosition(img_CamStream), img_CamStream);
@@ -101,8 +97,6 @@ namespace MeasureDeflection
         /// <summary>
         /// Button click event for color picking. The hit button is supposed to become green.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void btn_CoulorPicker_Click(object sender, RoutedEventArgs e)
         {
             img_CamStream.MouseMove += new MouseEventHandler(camStreamMouseMove);
@@ -127,8 +121,6 @@ namespace MeasureDeflection
         /// <summary>
         /// Mouse click-event during color picker mode
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void Img_CamStream_MouseDown(object sender, MouseButtonEventArgs e)
         {
             img_CamStream.MouseMove -= new MouseEventHandler(camStreamMouseMove);
@@ -142,8 +134,6 @@ namespace MeasureDeflection
         /// Depending on current mode either the capture should be started or stopped.
         /// Current mode is shown properly by naming the action on pressing.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void btn_StartStopButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_mvvm.IsRunning)

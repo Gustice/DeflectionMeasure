@@ -3,20 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing;
 using System.Windows.Media.Imaging;
 using System.IO;
+using System.Windows.Media;
 using System.Windows.Interop;
 using System.Windows;
 
 using AForge.Imaging;
 using AForge.Imaging.Filters;
 using System.Drawing.Imaging;
-using System.Windows.Media;
 using System.Drawing.Drawing2D;
 
 using MeasureDeflection.Utils;
-
+using MeasureDeflection.Processor;
 
 namespace MeasureDeflection
 {
@@ -47,14 +46,10 @@ namespace MeasureDeflection
             }
         }
 
-        BlobProfile _anchorProfile;
-        private BlobProfile AnchorProfile { get { return _anchorProfile; } set { _anchorProfile = value; } }
+        TargetProfile lastAnchorTarget;
+        TargetProfile lastMovingTipTarget;
+        public AnchorTipPair Profile { get; set; }
 
-        BlobProfile _movingTipProfile;
-        internal BlobProfile MovingTipProfile { get { return _movingTipProfile; } set { _movingTipProfile = value; } }
-
-        SearchProfile lastAnchorTarget;
-        SearchProfile lastMovingTipTarget;
 
         /// <summary>
         /// Reset internal to get a clean object to start a new image processing approach
@@ -64,18 +59,18 @@ namespace MeasureDeflection
             Operation = OperationMode.missingData;
         }
 
-        internal ImageSource SetAnchorProperty(BitmapImage camImage, SearchProfile anchorTarget, out BlobCentre aP, out BlobCentre mtP)
+        Analyzer PicAnalyzer = new Analyzer();
+        
+        internal ImageSource SetAnchorProperty(BitmapImage camImage, TargetProfile anchorTarget, out BlobCentre aP, out BlobCentre mtP)
         {
-            AnchorProfile = new BlobProfile();
-            lastAnchorTarget = anchorTarget;
-            Bitmap porcessedImg = BitmapImage2Bitmap(camImage);
-            BlobCounter blobCounter = AnalyzePicture(anchorTarget, porcessedImg, AnchorProfile);
+            _initFinished = false;
 
-            blobCounter.ProcessImage(porcessedImg);
-            Blob[] blobs = blobCounter.GetObjectsInformation();
+            Profile = new AnchorTipPair(anchorTarget);
+
+            Blob[] blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Current, camImage);
+
             aP = null;
             mtP = null;
-            _initFinished = false;
 
             if (blobs.Length >= 1)
             {
@@ -94,7 +89,7 @@ namespace MeasureDeflection
                         Operation = OperationMode.MovingTipSetImplicitly;
                         mtP = GetBlopCentre(remains[0]);
 
-                        lastMovingTipTarget = new SearchProfile();
+                        lastMovingTipTarget = new TargetProfile();
                         lastMovingTipTarget.Centre = mtP;
                     }
                 }
@@ -102,22 +97,17 @@ namespace MeasureDeflection
             }
             else { _promptNewMessage_Handler?.Invoke(UserPrompt.eNotifyType.Warning, "Anchor point not found"); }
 
-            return Bitmap2BitmapImage(porcessedImg);
+            return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
-        internal ImageSource SetMovingTipProperty(BitmapImage camImage, SearchProfile movingTipTarget, out BlobCentre mtP)
+
+        internal ImageSource SetMovingTipProperty(BitmapImage camImage, TargetProfile movingTipTarget, out BlobCentre mtP)
         {
             mtP = null;
-            Bitmap porcessedImg = BitmapImage2Bitmap(camImage);
-
             if ((int)Operation >= (int)OperationMode.AnchorIsSet)
             {
-                MovingTipProfile = new BlobProfile();
-                lastMovingTipTarget = movingTipTarget;
-                BlobCounter blobCounter = AnalyzePicture(movingTipTarget, porcessedImg, MovingTipProfile);
-
-                blobCounter.ProcessImage(porcessedImg);
-                Blob[] blobs = blobCounter.GetObjectsInformation();
+                Profile.AddTipProfile(movingTipTarget);
+                Blob[] blobs = PicAnalyzer.FindBlobs(Profile.MovingTip.Current, camImage);
 
                 if (blobs.Length >= 1)
                 {
@@ -135,7 +125,8 @@ namespace MeasureDeflection
                 else { _promptNewMessage_Handler?.Invoke(UserPrompt.eNotifyType.Warning, "Moving tip point not found"); }
             }
             else { _promptNewMessage_Handler?.Invoke(UserPrompt.eNotifyType.Warning, "Please specify anchor first"); }
-            return Bitmap2BitmapImage(porcessedImg);
+
+            return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
         private static BlobCentre GetBlopCentre(Blob blob)
@@ -149,33 +140,16 @@ namespace MeasureDeflection
             return aP;
         }
 
-        private BlobCounter AnalyzePicture(SearchProfile target, Bitmap porcessedImg, BlobProfile profile)
+
+
+
+
+        public RenderTargetBitmap ProcessImage(BitmapImage camImage, int tolerance, out BlobCentre aP, out BlobCentre mtP)
         {
-            EuclideanColorFiltering filter = new EuclideanColorFiltering();
-            filter.CenterColor = target.Color;
-            filter.Radius = profile.FilterRadius;
-            filter.ApplyInPlace(porcessedImg);
-
-            BlobCounter blobCounter = new BlobCounter();
-            blobCounter.MinWidth = profile.MinSize;
-            blobCounter.MinHeight = profile.MinSize;
-            blobCounter.FilterBlobs = true;
-            blobCounter.ObjectsOrder = ObjectsOrder.Size;
-
-            BitmapData objectsData = porcessedImg.LockBits(new Rectangle(0, 0, porcessedImg.Width, porcessedImg.Height), ImageLockMode.ReadOnly, porcessedImg.PixelFormat);
-            Grayscale grayscaleFilter = new Grayscale(0.2125, 0.7154, 0.0721);
-            UnmanagedImage grayImage = grayscaleFilter.Apply(new UnmanagedImage(objectsData));
-            porcessedImg.UnlockBits(objectsData);
-            return blobCounter;
-        }
-
-        public BitmapImage ProcessImage(BitmapImage camImage, AnchorTipPair targets, int tolerance, out BlobCentre aP, out BlobCentre mtP)
-        {
-            Bitmap porcessedImg = BitmapImage2Bitmap(camImage);
-            Bitmap anchorView = (Bitmap)porcessedImg.Clone();
-            Bitmap movingTipView = (Bitmap)porcessedImg.Clone();
             aP = null;
             mtP = null;
+
+            BitmapImage filterImage = null;
 
             switch (Operation)
             {
@@ -189,9 +163,7 @@ namespace MeasureDeflection
 
                 case OperationMode.MovingTipSetImplicitly:
                     {
-                        BlobCounter blobCounter = AnalyzePicture(lastAnchorTarget, porcessedImg, AnchorProfile);
-                        blobCounter.ProcessImage(porcessedImg);
-                        Blob[] blobs = blobCounter.GetObjectsInformation();
+                        Blob[] blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
 
                         if (blobs.Length >= 1)
                         {
@@ -215,15 +187,15 @@ namespace MeasureDeflection
                             else { _promptNewMessage_Handler?.Invoke(UserPrompt.eNotifyType.Warning, "Anchor point not found"); }
                         }
                         else { _promptNewMessage_Handler?.Invoke(UserPrompt.eNotifyType.Warning, "Anchor point not found"); }
-                        return Bitmap2BitmapImage(porcessedImg);
+                        filterImage = Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
                     }
                     break;
 
                 case OperationMode.ExplicitSetMovingTip:
                     {
-                        BlobCounter anchorBlobs = AnalyzePicture(lastAnchorTarget, anchorView, AnchorProfile);
-                        anchorBlobs.ProcessImage(porcessedImg);
-                        Blob[] blobs = anchorBlobs.GetObjectsInformation();
+                        Blob[] blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
+                        var anchorView = (System.Drawing.Bitmap)PicAnalyzer.PorcessedImg.Clone();
+
 
                         if (blobs.Length >= 1)
                         {
@@ -238,9 +210,8 @@ namespace MeasureDeflection
                         }
                         else { _promptNewMessage_Handler?.Invoke(UserPrompt.eNotifyType.Warning, "Anchor point not found"); }
 
-                        BlobCounter movingTipBlobs = AnalyzePicture(lastMovingTipTarget, movingTipView, MovingTipProfile);
-                        movingTipBlobs.ProcessImage(porcessedImg);
-                        blobs = movingTipBlobs.GetObjectsInformation();
+                        blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
+                        var movingTipView = (System.Drawing.Bitmap)PicAnalyzer.PorcessedImg.Clone();
 
                         if (blobs.Length >= 1)
                         {
@@ -257,10 +228,10 @@ namespace MeasureDeflection
 
 
                         //create a bitmap to hold the combined image
-                        Bitmap combindedImage = new Bitmap(porcessedImg.Width, porcessedImg.Height);
+                        System.Drawing.Bitmap combindedImage = new System.Drawing.Bitmap(anchorView.Width, anchorView.Height);
 
                         //get a graphics object from the image so we can draw on it
-                        using (Graphics g = Graphics.FromImage(combindedImage))
+                        using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(combindedImage))
                         {
                             //set background color
                             g.Clear(System.Drawing.Color.Black);
@@ -270,12 +241,57 @@ namespace MeasureDeflection
                             g.DrawImage(anchorView, new System.Drawing.Rectangle(0, 0, anchorView.Width, anchorView.Height));
                         }
 
-                        return Bitmap2BitmapImage(combindedImage);
+                        filterImage = Bitmap2BitmapImage(combindedImage);
                     }
                     break;
             }
 
-            return Bitmap2BitmapImage(porcessedImg);
+            if(filterImage == null)
+            {
+                var bitmap = Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
+
+                DrawingVisual temp = new DrawingVisual();
+                using (DrawingContext dc = temp.RenderOpen())
+                {
+                    dc.DrawImage(filterImage, new Rect(0, 0, filterImage.PixelWidth, filterImage.PixelHeight));
+                }
+                RenderTargetBitmap rtbb = new RenderTargetBitmap(filterImage.PixelWidth, filterImage.PixelHeight, 96, 96, PixelFormats.Pbgra32);
+                rtbb.Render(temp);
+
+                return rtbb;
+            }
+
+
+            DrawingVisual dv = new DrawingVisual();
+            using (DrawingContext dc = dv.RenderOpen())
+            {
+                Pen stroke = new Pen(Brushes.White, 3);
+                dc.DrawImage(filterImage, new Rect(0, 0, filterImage.PixelWidth, filterImage.PixelHeight));
+
+                if ((aP != null) && (mtP != null))
+                {
+                    Point anchor = new Point(aP.X, aP.Y);
+
+                    dc.DrawEllipse(Brushes.Yellow, stroke, anchor, 10, 10);
+                    if (mtP != null)
+                    {
+                        Point movingTip = new Point(mtP.X, mtP.Y);
+
+                        dc.DrawEllipse(Brushes.White, stroke, movingTip, 10, 10);
+                        dc.DrawLine(stroke, anchor, movingTip);
+                        dc.DrawRectangle(Brushes.Transparent, stroke,
+                            new Rect(new Point(aP.X - tolerance / 2, aP.Y - tolerance / 2),
+                            new Size(tolerance, tolerance)));
+                        dc.DrawRectangle(Brushes.Transparent, stroke,
+                            new Rect(new Point(mtP.X - tolerance / 2, mtP.Y - tolerance / 2),
+                            new Size(tolerance, tolerance)));
+                    }
+                }
+            }
+
+            RenderTargetBitmap rtb = new RenderTargetBitmap(filterImage.PixelWidth, filterImage.PixelHeight, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(dv);
+            return rtb;
         }
 
         private Blob ScanTargetBlob(BlobCentre anchorTarget, Blob[] blobs, int tolerance, out Blob[] remeins)
@@ -287,7 +303,7 @@ namespace MeasureDeflection
             int j = 0;
             foreach (Blob blob in blobs)
             {
-                Rectangle rect = blob.Rectangle;
+                System.Drawing.Rectangle rect = blob.Rectangle;
                 int x = rect.X + (rect.Width / 2);
                 int y = rect.Y + (rect.Height / 2);
 
@@ -316,18 +332,6 @@ namespace MeasureDeflection
             _promptNewMessage_Handler = promptNewMessage_Handler;
         }
 
-        public static Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
-        {
-            using (MemoryStream outStream = new MemoryStream())
-            {
-                BitmapEncoder enc = new BmpBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-                enc.Save(outStream);
-                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(outStream);
-
-                return new Bitmap(bitmap);
-            }
-        }
 
         public static BitmapImage Bitmap2BitmapImage(System.Drawing.Bitmap bitmap)
         {
@@ -349,9 +353,9 @@ namespace MeasureDeflection
 
         public static System.Windows.Media.Color GetAvarageColor(BitmapSource bitmapSource, int centreX, int centreY, int radius)
         {
-            Bitmap avrg = new Bitmap(1, 1);
+            System.Drawing.Bitmap avrg = new System.Drawing.Bitmap(1, 1);
 
-            Bitmap source = BitmapImage2Bitmap(bitmapSource as BitmapImage);
+            System.Drawing.Bitmap source = Analyzer.BitmapImage2Bitmap(bitmapSource as BitmapImage);
 
             // Clone a portion of the Bitmap object.
 
@@ -363,19 +367,19 @@ namespace MeasureDeflection
 
             int range = 2 * radius;
 
-            Rectangle cloneRect = new Rectangle(x, y, range, range);
+            System.Drawing.Rectangle cloneRect = new System.Drawing.Rectangle(x, y, range, range);
 
             System.Drawing.Imaging.PixelFormat format = source.PixelFormat;
-            Bitmap clonedSection = source.Clone(cloneRect, format);
+            System.Drawing.Bitmap clonedSection = source.Clone(cloneRect, format);
 
-            using (Graphics g = Graphics.FromImage(avrg))
+            using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(avrg))
             {
                 // updated: the Interpolation mode needs to be set to 
                 // HighQualityBilinear or HighQualityBicubic or this method
                 // doesn't work at all.  With either setting, the results are
                 // slightly different from the averaging method.
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.DrawImage(clonedSection, new Rectangle(0, 0, 1, 1));
+                g.DrawImage(clonedSection, new System.Drawing.Rectangle(0, 0, 1, 1));
             }
             System.Drawing.Color pixel = avrg.GetPixel(0, 0);
 
@@ -385,33 +389,20 @@ namespace MeasureDeflection
             return avrgCol;
         }
 
-
-        public class BlobProfile
-        {
-            public short FilterRadius = 50;
-            public int MinSize = 10;
-        }
-
         public class AnchorTipPair
         {
-            public SearchProfile Anchor { get; set; } = new SearchProfile();
-            public SearchProfile MovingTip { get; set; } = new SearchProfile();
-        }
-        public class SearchProfile
-        {
-            public BlobCentre Centre { get; set; }
-            public RGB Color { get; set; }
-            public int TargetSize { get; set; }
-            public int SizeTolerance { get; set; }
-            public int PositionTolerance { get; set; }
-        }
+            public DynamicProfile Anchor { get; set; }
+            public DynamicProfile MovingTip { get; set; }
 
-        public class BlobCentre
-        {
-            public double X { get; set; }
-            public double Y { get; set; }
+            public AnchorTipPair(TargetProfile profile)
+            {
+                Anchor = new DynamicProfile(profile);
+            }
 
-            public double D { get; set; }
+            public void AddTipProfile(TargetProfile profile)
+            {
+                MovingTip = new DynamicProfile(profile);
+            }
         }
 
         enum OperationMode

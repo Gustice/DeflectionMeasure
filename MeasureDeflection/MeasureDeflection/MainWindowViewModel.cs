@@ -3,27 +3,20 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 using AForge.Video;
 using AForge.Video.DirectShow;
-using Microsoft.Win32;
 
 using MeasureDeflection.Utils;
 using System.Reflection;
 using MeasureDeflection.Utils.Interfaces;
 using System.Collections.ObjectModel;
+using MeasureDeflection.Processor;
 
 
 
@@ -57,7 +50,6 @@ namespace MeasureDeflection
         /// Automated PropertyChanged Methode:
         /// Calling Member is determined automatically by CallerMemberName-Property
         /// </summary>
-        /// <param name="propertyName"></param>
         private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
         {
             System.ComponentModel.PropertyChangedEventHandler handler = this.PropertyChanged;
@@ -88,10 +80,8 @@ namespace MeasureDeflection
             referenceDireectionVector = new Vector();
 
             ImageProcessing_Command = new RelayCommand(ImageProcessingAction);
-            AnchorColorPicker_Command = new RelayCommand(AnchorColorPicker);
-            MovingTipColorPicker_Command = new RelayCommand(MovingTipColorPicker);
-            PreloadImageAndProcess_Command = new RelayCommand(PreloadImageAndProcess);
-            SaveCurrentImage_Command = new RelayCommand(SaveCurrentImage);
+            ColorPicker_Command = new RelayCommand(ColorPickerAction);
+            LoadSaveImage_Command = new RelayCommand(LoadSaveImageAction);
             SetAngleReference_Command = new RelayCommand(SetAngleReference);
             AngleList_Command = new RelayCommand(AngleListAction);
             _fHandler = fHandler;
@@ -101,9 +91,7 @@ namespace MeasureDeflection
         #region GUI_Properties
 
         private int _slectedVideoSourceIdx;
-        /// <summary>
-        /// Selected index in list of available video sources
-        /// </summary>
+        /// <summary> Selected index in list of available video sources </summary>
         public int SlectedVideoSourceIdx
         {
             get { return _slectedVideoSourceIdx; }
@@ -111,7 +99,7 @@ namespace MeasureDeflection
         }
 
         private object _selectedVideoSource;
-
+        /// <summary> Selected video source from list</summary>
         public object SelectedVideoSource
         {
             get { return _selectedVideoSource; }
@@ -119,9 +107,7 @@ namespace MeasureDeflection
         }
 
         private BitmapImage _camImage;
-        /// <summary>
-        /// Camera-Image
-        /// </summary>
+        /// <summary> Camera-Image </summary>
         public BitmapImage CamImage
         {
             get { return _camImage; }
@@ -129,9 +115,7 @@ namespace MeasureDeflection
         }
 
         private ImageSource _processedImage;
-        /// <summary>
-        /// Processed-Image
-        /// </summary>
+        /// <summary> Processed-Image </summary>
         public ImageSource ProcessedImage
         {
             get { return _processedImage; }
@@ -139,24 +123,18 @@ namespace MeasureDeflection
         }
 
         private string _angleOutput;
-        /// <summary>
-        /// Prompted Angle
-        /// </summary>
+        /// <summary> Prompted Angle </summary>
         public string AngleOutput
         {
             get { return _angleOutput; }
             set { _angleOutput = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Formatted List of saved DotPositions
-        /// </summary>
+        /// <summary> Formatted List of saved DotPositions </summary>
         public ObservableCollection<DotSamples> DotPosition { get; set; } = new ObservableCollection<DotSamples>();
 
         private string _anchorPixelPosition;
-        /// <summary>
-        /// Formated indication of anchor pixel position
-        /// </summary>
+        /// <summary> Formated indication of anchor pixel position </summary>
         public string AnchorPixelPosition
         {
             get { return _anchorPixelPosition; }
@@ -164,9 +142,7 @@ namespace MeasureDeflection
         }
 
         private string _movingTipPixelPosition;
-        /// <summary>
-        /// Formated indication of moving tip pixel position
-        /// </summary>
+        /// <summary> Formated indication of moving tip pixel position </summary>
         public string MovingTipPixelPosition
         {
             get { return _movingTipPixelPosition; }
@@ -174,34 +150,24 @@ namespace MeasureDeflection
         }
 
         private double _targetTolerance;
-        /// <summary>
-        /// Tolerance factor applied on size in order to define tolerated dot movement
-        /// </summary>
+        /// <summary> Tolerance factor applied on size in order to define tolerated dot movement </summary>
         public double TargetToleranceFactor
         {
             get { return _targetTolerance; }
             set { _targetTolerance = value; OnPropertyChanged(); }
         }
 
-        /// <summary>
-        /// Information for user
-        /// </summary>
+        /// <summary> Information for user </summary>
         public UserPrompt Prompt { get; set; } = new UserPrompt();
 
-        /// <summary>
-        /// Picked color of anchor
-        /// </summary>
+        /// <summary> Picked color of anchor </summary>
         public SmartColor AnchorColor { get; set; } = new SmartColor();
 
-        /// <summary>
-        /// Picked color of moving tip
-        /// </summary>
+        /// <summary> Picked color of moving tip </summary>
         public SmartColor MovingTipColor { get; set; } = new SmartColor();
 
         private int _pickerRadius;
-        /// <summary>
-        /// Color picker radius. To calculate avarage color for given area.
-        /// </summary>
+        /// <summary> Color picker radius. To calculate avarage color for given area. </summary>
         public int PickerRadius
         {
             get { return _pickerRadius; }
@@ -209,9 +175,7 @@ namespace MeasureDeflection
         }
 
         private FilterInfoCollection _videoCaptureDevices;
-        /// <summary>
-        /// Collection of available video devices
-        /// </summary>
+        /// <summary> Collection of available video devices </summary>
         public FilterInfoCollection VideoCaptureDevices
         {
             get { return _videoCaptureDevices; }
@@ -219,9 +183,7 @@ namespace MeasureDeflection
         }
 
         private bool _tipSelectionActive;
-        /// <summary>
-        /// Property to show wether moving tip was explicitely set
-        /// </summary>
+        /// <summary> Property to show wether moving tip was explicitely set </summary>
         public bool TipSelectionActive
         {
             get { return _tipSelectionActive; }
@@ -229,15 +191,11 @@ namespace MeasureDeflection
         }
         #endregion
 
-        /// <summary>
-        /// Image Processor of captured or loaded images
-        /// </summary>
+        /// <summary> Image Processor of captured or loaded images </summary>
         ImageProcessor Processor;
 
         VideoCaptureDevice _captureDevice;
-        /// <summary>
-        /// Source to capture images
-        /// </summary>
+        /// <summary> Source to capture images </summary>
         public VideoCaptureDevice CaptureDevice
         {
             get => _captureDevice;
@@ -257,11 +215,10 @@ namespace MeasureDeflection
         public bool IsRunning { get => _isRunning; set => _isRunning = value; }
 
         PickerMode ColorCaptureMode = PickerMode.off;
-        ImageProcessor.AnchorTipPair _targets = new ImageProcessor.AnchorTipPair();
         Vector currentDirectionVector;
         Vector referenceDireectionVector;
-        ImageProcessor.BlobCentre anchorPoint = new ImageProcessor.BlobCentre();
-        ImageProcessor.BlobCentre movingTipPoint = new ImageProcessor.BlobCentre();
+        BlobCentre anchorPoint = new BlobCentre();
+        BlobCentre movingTipPoint = new BlobCentre();
         int _sampleIteration = 0;
         int currentTolerance = 0;
         int _lastSelectedVideoSourceIdx;
@@ -269,9 +226,7 @@ namespace MeasureDeflection
         int skipImage = 0;
 
         double _currentAngle = 0;
-        /// <summary>
-        /// Current angle relative to an reference angle 
-        /// </summary>
+        /// <summary> Current angle relative to an reference angle </summary>
         public double CurrentAngle
         {
             get { return _currentAngle; }
@@ -283,10 +238,8 @@ namespace MeasureDeflection
         #region GUI_Commands
 
         public ICommand ImageProcessing_Command { get; set; }
-        public ICommand AnchorColorPicker_Command { get; set; }
-        public ICommand MovingTipColorPicker_Command { get; set; }
-        public ICommand PreloadImageAndProcess_Command { get; set; }
-        public ICommand SaveCurrentImage_Command { get; set; }
+        public ICommand ColorPicker_Command { get; set; }
+        public ICommand LoadSaveImage_Command { get; set; }
         public ICommand SetAngleReference_Command { get; set; }
         public ICommand AngleList_Command { get; set; }
 
@@ -294,7 +247,6 @@ namespace MeasureDeflection
         /// <summary>
         /// This triggers scan for available image caputre devices.
         /// </summary>
-        /// <param name="obj"></param>
         public void LoadAvailableVideoSources()
         {
             VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
@@ -303,86 +255,91 @@ namespace MeasureDeflection
         /// <summary>
         /// Imaging and processing related command
         /// </summary>
-        /// <param name="obj"></param>
         private void ImageProcessingAction(object obj)
         {
             string action = (string)obj;
 
             switch (action)
             {
-                case "Start":
-                    CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
-                    CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrame);
-                    CaptureDevice.Start();
+                case "Start": 
+                    StartSelectedVideoSource(new NewFrameEventHandler(CaptureDevice_NewFrame));
                     break;
 
-                case "Stop": CaptureDevice.SignalToStop(); break;
+                case "Stop": 
+                    CaptureDevice.SignalToStop(); 
+                    break;
 
                 case "Sample":
-                    if (_isRunning == false)
-                    {
-                        CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
-                        CaptureDevice.NewFrame += new NewFrameEventHandler(CaptureDevice_NewFrameOnce);
-                        CaptureDevice.Start();
-                    }
+                    if (IsRunning == false) // @todo IsRunning is not used
+                        StartSelectedVideoSource(new NewFrameEventHandler(CaptureDevice_NewFrameOnce));
                     break;
 
-                default: throw new Exception("This command is unknown");
+                default: throw new Exception($"The command {action} is unknown");
             }
-
         }
 
         /// <summary>
-        /// Set anchor properties (color and start position)
+        /// Start Video Capturing with selected source
         /// </summary>
-        /// <param name="obj"></param>
-        private void AnchorColorPicker(object obj)
+        private void StartSelectedVideoSource(NewFrameEventHandler imageCallback)
         {
-            ColorCaptureMode = PickerMode.getAnchor;
+            CaptureDevice = new VideoCaptureDevice((string)SelectedVideoSource);
+            CaptureDevice.NewFrame += new NewFrameEventHandler(imageCallback);
+            CaptureDevice.Start();
+        }
+
+        /// <summary> Mode code for action keyword </summary>
+        Dictionary<string, PickerMode> PickerModeDict = new Dictionary<string, PickerMode>
+        {
+            {"Anchor", PickerMode.getAnchor},
+            {"MovingTip", PickerMode.getTip},
+        };
+
+        /// <summary>
+        /// Set referencepoint properties (color and start position)
+        /// </summary>
+        private void ColorPickerAction(object obj)
+        {
+            string action = (string)obj;
+            if (!PickerModeDict.ContainsKey(action))
+                throw new Exception($"The command '{action}' is unknown");
+
+            ColorCaptureMode = PickerModeDict[action];
         }
 
         /// <summary>
-        /// Set moving tip properties (color and start position)
+        /// Saves currecnt image ore loads image from filesystem to analyse it rather than a freshly captured image
         /// </summary>
-        /// <param name="obj"></param>
-        private void MovingTipColorPicker(object obj)
+        private void LoadSaveImageAction(object obj)
         {
-            ColorCaptureMode = PickerMode.getTip;
-        }
+            string action = (string)obj;
+            switch (action)
+            {
+                case "PreloadImage":
+                    var newImage = _fHandler.LoadImage();
+                    if (newImage == null)
+                        return;
 
-        /// <summary>
-        /// Loads image from filesystem to analyse it rather than a freshly captured image
-        /// </summary>
-        /// <param name="obj"></param>
-        private void PreloadImageAndProcess(object obj)
-        {
-            var newImage = _fHandler.LoadImage();
-            if (newImage == null)
-                return;
+                    CamImage = newImage;
+                    ProcessImage(currentTolerance * 3);
+                    break;
 
-            CamImage = newImage;
-            ProcessImage(currentTolerance * 3);
-        }
+                case "SaveImage":
+                    _fHandler.SaveImage(CamImage);
+                    break;
 
-        /// <summary>
-        /// Saves current taken image for later use on the filesystem
-        /// </summary>
-        /// <param name="obj"></param>
-        private void SaveCurrentImage(object obj)
-        {
-            _fHandler.SaveImage(CamImage);
+                default: throw new Exception($"The command {action} is unknown");
+            }
         }
 
         /// <summary>
         /// Sets zero-positiom reference to current position
         /// </summary>
-        /// <param name="obj"></param>
         private void SetAngleReference(object obj)
         {
             CurrentAngle = 0;
             referenceDireectionVector = currentDirectionVector;
         }
-
 
         /// <summary>
         /// Command related to DotList
@@ -393,28 +350,25 @@ namespace MeasureDeflection
 
             switch (action)
             {
-                case "Save": DotPosition.Add(new DotSamples(DotPosition.Count, anchorPoint.X, anchorPoint.Y, movingTipPoint.X, movingTipPoint.Y, CurrentAngle)); break;
+                case "SaveList": DotPosition.Add(new DotSamples(DotPosition.Count, anchorPoint.X, anchorPoint.Y, movingTipPoint.X, movingTipPoint.Y, CurrentAngle)); break;
 
-                case "Copy":
+                case "CopyList":
                     string outTable = "Sample\tAnchor-X\ttAnchor-Y\tTip-X\tTip-Y\tAngle" + Environment.NewLine;
                     foreach (var item in DotPosition)
                         outTable += item.ToString() + Environment.NewLine;
                     Clipboard.SetText(outTable);
                     break;
 
-                case "Clear": DotPosition.Clear(); break;
+                case "ClearList": DotPosition.Clear(); break;
 
                 default: throw new Exception("This command is unknown");
             }
         }
         #endregion
 
-
         /// <summary>
         /// Event intended to be triggered if capture device provides a new image
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="eventArgs"></param>
         void CaptureDevice_NewFrame(object sender, NewFrameEventArgs eventArgs)
         {
             if (skipImage-- <= 0)
@@ -427,8 +381,6 @@ namespace MeasureDeflection
         /// <summary>
         /// Event intended to be triggered once if capture device provides a new image and stop caputre device
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="eventArgs"></param>
         void CaptureDevice_NewFrameOnce(object sender, NewFrameEventArgs eventArgs)
         {
             if (skipImage-- <= 0)
@@ -443,7 +395,6 @@ namespace MeasureDeflection
         /// <summary>
         /// Displays captured image and initiates processing
         /// </summary>
-        /// <param name="eventArgs"></param>
         private void CaputerImage(NewFrameEventArgs eventArgs)
         {
             System.Drawing.Bitmap frame = (System.Drawing.Bitmap)eventArgs.Frame.Clone();
@@ -488,8 +439,6 @@ namespace MeasureDeflection
         /// Colorpicker function.
         /// The current position in the image is used to set the selected color.
         /// </summary>
-        /// <param name="clickPos"></param>
-        /// <param name="imageFrame"></param>
         public void SetColorFromPositionInPreview(Point clickPos, Image imageFrame)
         {
             if (ColorCaptureMode != PickerMode.off)
@@ -500,14 +449,13 @@ namespace MeasureDeflection
                 {
                     case PickerMode.getAnchor:
                         {
-                            _targets.Anchor.Centre = new ImageProcessor.BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
-                            _targets.Anchor.Color = new AForge.Imaging.RGB(AnchorColor.R, AnchorColor.G, AnchorColor.B);
+                            var profile = SetSearchProfile(pixelPos, AnchorColor);
                             TipSelectionActive = true;
 
-                            ImageProcessor.BlobCentre anchor = new ImageProcessor.BlobCentre();
-                            ImageProcessor.BlobCentre movingTip = new ImageProcessor.BlobCentre();
+                            var anchor = new BlobCentre();
+                            var movingTip = new BlobCentre();
 
-                            ImageSource img = Processor.SetAnchorProperty(CamImage, _targets.Anchor, out anchor, out movingTip);
+                            var img = Processor.SetAnchorProperty(CamImage, profile, out anchor, out movingTip);
                             img.Freeze();
                             ProcessedImage = img;
                             currentTolerance = (int)(anchor.D * TargetToleranceFactor);
@@ -516,11 +464,10 @@ namespace MeasureDeflection
 
                     case PickerMode.getTip:
                         {
-                            _targets.MovingTip.Centre = new ImageProcessor.BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
-                            _targets.MovingTip.Color = new AForge.Imaging.RGB(MovingTipColor.R, MovingTipColor.G, MovingTipColor.B);
+                            var profile = SetSearchProfile(pixelPos, MovingTipColor);
 
-                            ImageProcessor.BlobCentre movingTip = new ImageProcessor.BlobCentre();
-                            ImageSource img = Processor.SetMovingTipProperty(CamImage, _targets.MovingTip, out movingTip);
+                            var movingTip = new BlobCentre();
+                            var img = Processor.SetMovingTipProperty(CamImage, profile, out movingTip);
                             img.Freeze();
                             ProcessedImage = img;
                         }
@@ -534,6 +481,17 @@ namespace MeasureDeflection
         }
 
         /// <summary>
+        /// Generates search profile wit target location and color
+        /// </summary>
+        private TargetProfile SetSearchProfile(Point pixelPos, SmartColor color)
+        {
+            var point = new TargetProfile();
+            point.Centre = new BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
+            point.Color = new AForge.Imaging.RGB(color.R, color.G, color.B);
+            return point;
+        }
+
+        /// <summary>
         /// Processes Image. 
         /// Scans for anchor and moving tip on assumed locations, calculates deflection and visualizes the result
         /// </summary>
@@ -541,67 +499,50 @@ namespace MeasureDeflection
         {
             if (Processor.InitFinisched)
             {
-                ImageProcessor.BlobCentre aP, mTP;
-                BitmapImage anchroImg = Processor.ProcessImage(CamImage, _targets, tolerance, out aP, out mTP);
+                BlobCentre aP, mTP;
+                var image = Processor.ProcessImage(CamImage, tolerance, out aP, out mTP);
 
-                DrawingVisual dv = new DrawingVisual();
-                using (DrawingContext dc = dv.RenderOpen())
+                ImageSource imgb = ((ImageSource)image);
+                imgb.Freeze();
+                ProcessedImage = imgb;
+
+                AnchorPixelPosition = $"###.## / ###.##";
+                MovingTipPixelPosition = $"###.## / ###.##";
+                double angle = -361;
+
+                Point anchor = new Point();
+                Point movingTip = new Point();
+                if (aP != null)
                 {
-                    Pen stroke = new Pen(Brushes.White, 2);
-
-                    dc.DrawImage(anchroImg, new Rect(0, 0, anchroImg.PixelWidth, anchroImg.PixelHeight));
-
-                    AnchorPixelPosition = $"###.## / ###.##";
-                    MovingTipPixelPosition = $"###.## / ###.##";
-
-                    double angle = -361;
-
-                    if ((aP != null) && (mTP != null))
-                    {
-                        Point anchor = new Point(aP.X, aP.Y);
-                        AnchorPixelPosition = $"{anchor.X:F2} / {anchor.Y:F2}";
-                        anchorPoint = aP;
-
-                        dc.DrawEllipse(Brushes.Yellow, stroke, anchor, 10, 10);
-                        if (mTP != null)
-                        {
-                            Point movingTip = new Point(mTP.X, mTP.Y);
-                            MovingTipPixelPosition = $"{movingTip.X:F2} / {movingTip.Y:F2}";
-                            movingTipPoint = mTP;
-
-                            dc.DrawEllipse(Brushes.White, stroke, movingTip, 10, 10);
-                            dc.DrawLine(stroke, anchor, movingTip);
-                            dc.DrawRectangle(Brushes.Transparent, stroke,
-                                new Rect(new Point(aP.X - currentTolerance / 2, aP.Y - currentTolerance / 2),
-                                new Size(currentTolerance, currentTolerance)));
-                            dc.DrawRectangle(Brushes.Transparent, stroke,
-                                new Rect(new Point(mTP.X - currentTolerance / 2, mTP.Y - currentTolerance / 2),
-                                new Size(currentTolerance, currentTolerance)));
-
-                            Vector aV = new Vector { X = anchor.X, Y = anchor.Y };
-                            Vector mtV = new Vector { X = movingTip.X, Y = movingTip.Y };
-                            Vector dir = mtV - aV;
-
-                            angle = Vector.AngleBetween(dir, referenceDireectionVector);
-                            currentDirectionVector = dir;
-                        }
-                    }
-                    CurrentAngle = angle;
+                    anchor = new Point(aP.X, aP.Y);
+                    AnchorPixelPosition = $"{anchor.X:F2} / {anchor.Y:F2}";
+                    anchorPoint = aP;
+                }
+                if (mTP != null)
+                {
+                    movingTip = new Point(mTP.X, mTP.Y);
+                    MovingTipPixelPosition = $"{movingTip.X:F2} / {movingTip.Y:F2}";
+                    movingTipPoint = mTP;
                 }
 
-                RenderTargetBitmap rtb = new RenderTargetBitmap(anchroImg.PixelWidth, anchroImg.PixelHeight, 96, 96, PixelFormats.Pbgra32);
-                rtb.Render(dv);
-                ImageSource img = ((ImageSource)rtb);
-                img.Freeze();
-                ProcessedImage = img;
+                if ((aP != null) && (mTP != null))
+                {
+                    Vector aV = new Vector(anchor.X, anchor.Y);
+                    Vector mtV = new Vector(movingTip.X, movingTip.Y);
+                    Vector dir = mtV - aV;
+
+                    angle = Vector.AngleBetween(dir, referenceDireectionVector);
+                    currentDirectionVector = dir;
+                }
+                CurrentAngle = angle;
             }
         }
 
         /// <summary>
         /// Promt handler for user notifications
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="message"></param>
+        /// <param name="type">Notification urgency</param>
+        /// <param name="message">Message</param>
         public void PromptNewMessage_Handler(UserPrompt.eNotifyType type, string message)
         {
             Prompt.Caption = type.ToString();

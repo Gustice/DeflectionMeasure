@@ -103,7 +103,9 @@
                         Grid.Row="0"
                         Name="SetAnchor"
                         Content="Set Achor"
-                        Command="{Binding AnchorColorPicker_Command}" Margin="5"
+                        Command="{Binding ColorPicker_Command}" 
+                        CommandParameter="Anchor"
+                        Margin="5"
                         Click="btn_CoulorPicker_Click"
                         />
                 <Border Grid.Column="1" 
@@ -137,7 +139,8 @@
                     Grid.Row="1"
                     Name="SetTip"
                     Content="Set Moving Tip"
-                    Command="{Binding MovingTipColorPicker_Command}"
+                    Command="{Binding ColorPicker_Command}"
+                        CommandParameter="MovingTip"
                     IsEnabled="{Binding TipSelectionActive}"
                     Click="btn_CoulorPicker_Click"
                     />
@@ -192,11 +195,12 @@
                         VerticalAlignment="Top"
                         >
                 <Button Content="Preload"
-                    Command="{Binding PreloadImageAndProcess_Command}"
-                        
+                    Command="{Binding LoadSaveImage_Command}"
+                    CommandParameter="PreloadImage"
                     />
                 <Button Content="Save Image"
-                        Command="{Binding SaveCurrentImage_Command}"
+                        Command="{Binding LoadSaveImage_Command}"
+                        CommandParameter="SaveImage"
                         />
             </StackPanel>
 
@@ -311,19 +315,17 @@
                 <StackPanel Grid.Column="1" Orientation="Vertical">
                     <Button Content="Save dot" 
                             Command="{Binding AngleList_Command}"
-                            CommandParameter="Save"
+                            CommandParameter="SaveList"
                             />
                     <Button Content="Copy list" 
                             Command="{Binding AngleList_Command}"
-                            CommandParameter="Copy"
+                            CommandParameter="CopyList"
                             />
                     <Button Content="Clear" 
                             Command="{Binding AngleList_Command}"
-                            CommandParameter="Clear"
+                            CommandParameter="ClearList"
                             />
                 </StackPanel>
-
-
             </Grid>
         </Grid>
 
