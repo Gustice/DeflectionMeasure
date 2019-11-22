@@ -471,8 +471,7 @@ namespace MeasureDeflection
                         {
                             var profile = SetSearchProfile(pixelPos, MovingTipColor);
 
-                            var movingTip = new BlobCentre();
-                            var img = Processor.SetMovingTipProperty(CamImage, profile, out movingTip);
+                            var img = Processor.SetMovingTipProperty(CamImage, profile);
                             img.Freeze();
                             ProcessedImage = img;
                         }

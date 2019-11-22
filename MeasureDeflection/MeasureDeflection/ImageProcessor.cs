@@ -72,18 +72,7 @@ namespace MeasureDeflection
             AnchorPoint = TipPoint = null;
             Blob[] blobs;
 
-            anchorTarget.MinSize = Math.Min(camImage.PixelWidth, camImage.PixelHeight) / 10;
-            do
-            {
-                blobs = PicAnalyzer.FindBlobs(anchorTarget, camImage);
-                if (blobs.Length == 0)
-                {
-                    PromptMessage(UserPrompt.eNotifyType.Note, $"Unable to find Anchor with size {anchorTarget.MinSize}. Reduzing size constraint");
-                    anchorTarget.MinSize = anchorTarget.MinSize / 2;
-                }
-
-            } while (blobs.Length > 0 && anchorTarget.MinSize > 5);
-
+            blobs = TryToFindBlob(camImage, anchorTarget);
             if (blobs.Length == 0)
             {
                 PromptMessage(UserPrompt.eNotifyType.Warning, "Anchor point not found");
@@ -98,7 +87,7 @@ namespace MeasureDeflection
                 PromptMessage(UserPrompt.eNotifyType.Note, "Anchor point set");
 
                 AnchorPoint = GetBlopCentre(foundAnchor);
-                anchorTarget.MinSize = (int)((foundAnchor.Rectangle.Height + foundAnchor.Rectangle.Width) / 2 *0.7);
+                anchorTarget.MinSize = (int)((foundAnchor.Rectangle.Height + foundAnchor.Rectangle.Width) / 2 * 0.7);
                 Profile = new AnchorTipPair(anchorTarget);
 
                 if (remains.Length == 1)
@@ -118,10 +107,26 @@ namespace MeasureDeflection
             return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
-
-        internal ImageSource SetMovingTipProperty(BitmapImage camImage, TargetProfile movingTipTarget, out BlobCentre mtP)
+        private Blob[] TryToFindBlob(BitmapImage camImage, TargetProfile target)
         {
-            mtP = null;
+            Blob[] blobs;
+            target.MinSize = Math.Min(camImage.PixelWidth, camImage.PixelHeight) / 10;
+            do
+            {
+                blobs = PicAnalyzer.FindBlobs(target, camImage);
+                if (blobs.Length == 0)
+                {
+                    PromptMessage(UserPrompt.eNotifyType.Note, $"Unable to find reference point with size {target.MinSize}. Reduzing size constraint");
+                    target.MinSize = target.MinSize / 2;
+                }
+
+            } while (blobs.Length > 0 && target.MinSize > 5);
+            return blobs;
+        }
+
+        internal ImageSource SetMovingTipProperty(BitmapImage camImage, TargetProfile movingTipTarget)
+        {
+            TipPoint = null;
 
             if ((int)Operation >= (int)OperationMode.AnchorIsSet)
             {
