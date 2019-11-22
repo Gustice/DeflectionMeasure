@@ -333,6 +333,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="8*" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <TextBox Grid.Column="0" 
@@ -347,6 +348,9 @@
                      TextAlignment="Left"
                      Foreground="{Binding Prompt.PromptColor}"
                      />
+            <Button Grid.Column="2"
+                    Content="Save Log"
+                    Command="{Binding Log_Command}" />
         </Grid>
     </Grid>
 </Window>

@@ -73,6 +73,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Processor\Analyzer.cs" />
+    <Compile Include="Processor\TargetProfile.cs" />
     <Compile Include="Utils\DotSamples.cs" />
     <Compile Include="Utils\FileHandler.cs" />
     <Compile Include="MainWindowViewModel.cs" />
@@ -127,5 +129,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Pictures\Logo.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

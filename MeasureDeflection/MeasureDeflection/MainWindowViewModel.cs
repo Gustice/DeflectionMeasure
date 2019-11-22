@@ -84,6 +84,7 @@ namespace MeasureDeflection
             LoadSaveImage_Command = new RelayCommand(LoadSaveImageAction);
             SetAngleReference_Command = new RelayCommand(SetAngleReference);
             AngleList_Command = new RelayCommand(AngleListAction);
+            Log_Command = new RelayCommand(SaveLogAction);
             _fHandler = fHandler;
             _fHandler.DefaultPath = defaultPath;
         }
@@ -364,6 +365,14 @@ namespace MeasureDeflection
                 default: throw new Exception("This command is unknown");
             }
         }
+
+        /// <summary>
+        /// Command related to DotList
+        /// </summary>
+        private void SaveLogAction(object obj)
+        {
+            DotPosition.Add(new DotSamples(DotPosition.Count, anchorPoint.X, anchorPoint.Y, movingTipPoint.X, movingTipPoint.Y, CurrentAngle));
+        }
         #endregion
 
         /// <summary>
@@ -452,13 +461,9 @@ namespace MeasureDeflection
                             var profile = SetSearchProfile(pixelPos, AnchorColor);
                             TipSelectionActive = true;
 
-                            var anchor = new BlobCentre();
-                            var movingTip = new BlobCentre();
-
-                            var img = Processor.SetAnchorProperty(CamImage, profile, out anchor, out movingTip);
+                            var img = Processor.SetAnchorProperty(CamImage, profile);
                             img.Freeze();
                             ProcessedImage = img;
-                            currentTolerance = (int)(anchor.D * TargetToleranceFactor);
                         }
                         break;
 
@@ -474,8 +479,7 @@ namespace MeasureDeflection
                         break;
                 }
 
-                ProcessImage(currentTolerance);
-
+                ProcessImage(TargetToleranceFactor);
                 ColorCaptureMode = PickerMode.off;
             }
         }
@@ -495,12 +499,12 @@ namespace MeasureDeflection
         /// Processes Image. 
         /// Scans for anchor and moving tip on assumed locations, calculates deflection and visualizes the result
         /// </summary>
-        void ProcessImage(int tolerance)
+        void ProcessImage(double toleranceFactor)
         {
             if (Processor.InitFinisched)
             {
                 BlobCentre aP, mTP;
-                var image = Processor.ProcessImage(CamImage, tolerance, out aP, out mTP);
+                var image = Processor.ProcessImage(CamImage, toleranceFactor, out aP, out mTP);
 
                 ImageSource imgb = ((ImageSource)image);
                 imgb.Freeze();
@@ -538,6 +542,9 @@ namespace MeasureDeflection
             }
         }
 
+
+        List<string> MyLog = new List<string>();
+        
         /// <summary>
         /// Promt handler for user notifications
         /// </summary>
@@ -547,8 +554,13 @@ namespace MeasureDeflection
         {
             Prompt.Caption = type.ToString();
             Prompt.PromptMessage = message;
-            Debug.WriteLine($"'{type,8}': {message}");
+
+            var prompt = $"'{type,8}': {message}";
+            MyLog.Add(prompt);
+            Debug.WriteLine(prompt);
         }
+
+        
 
         #region SubClasses
 

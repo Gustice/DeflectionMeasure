@@ -68,7 +68,7 @@ namespace MeasureDeflection.Processor
         public int PositionTolerance { get; set; }
 
         public short FilterRadius { get; set; } = 50;
-        public int MinSize { get; set; } = 10;
+        public int MinSize { get; set; };
 
 
 
