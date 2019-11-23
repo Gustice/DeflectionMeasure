@@ -19,7 +19,7 @@ using MeasureDeflection.Processor;
 
 namespace MeasureDeflection
 {
-    class MarkerScanner
+    public class MarkerScanner
     {
         private bool _initFinished;
         /// <summary>
@@ -66,7 +66,7 @@ namespace MeasureDeflection
 
 
         // Note this Function is optimized for round blobs
-        internal ImageSource TryToSetAnchor(BitmapImage camImage, TargetProfile anchorTarget)
+        public ImageSource TryToSetAnchor(BitmapImage camImage, TargetProfile anchorTarget)
         {
             _initFinished = false;
             AnchorPoint = TipPoint = null;
@@ -124,7 +124,7 @@ namespace MeasureDeflection
             return blobs;
         }
 
-        internal ImageSource TryToSetTip(BitmapImage camImage, TargetProfile movingTipTarget)
+        public ImageSource TryToSetTip(BitmapImage camImage, TargetProfile movingTipTarget)
         {
             TipPoint = null;
 
@@ -342,13 +342,9 @@ namespace MeasureDeflection
 
                 if (((anchorTarget.X > (rect.X - tolerance)) && (anchorTarget.X < (rect.X + rect.Width + tolerance)))
                     && ((anchorTarget.Y > ( rect.Y - tolerance)) && (anchorTarget.Y < (rect.Y + rect.Height + tolerance))))
-                {
                     target = blob;
-                }
                 else
-                {
                     rest.Add(blob);
-                }
             }
 
             remeins = rest.ToArray();

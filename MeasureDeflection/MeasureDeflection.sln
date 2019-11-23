@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29020.237
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeasureDeflection", "MeasureDeflection\MeasureDeflection.csproj", "{CE862C60-89A7-4DCC-AC0E-75470EAB5A61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkerScannerTest", "MarkerScannerTest\MarkerScannerTest.csproj", "{573037A0-B513-4201-8FFF-9E5588795A5A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkerScannerTest", "MarkerScannerTest\MarkerScannerTest.csproj", "{F93D786A-3B45-44E2-AEA2-55C6239F864A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{CE862C60-89A7-4DCC-AC0E-75470EAB5A61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE862C60-89A7-4DCC-AC0E-75470EAB5A61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE862C60-89A7-4DCC-AC0E-75470EAB5A61}.Release|Any CPU.Build.0 = Release|Any CPU
-		{573037A0-B513-4201-8FFF-9E5588795A5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{573037A0-B513-4201-8FFF-9E5588795A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{573037A0-B513-4201-8FFF-9E5588795A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{573037A0-B513-4201-8FFF-9E5588795A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F93D786A-3B45-44E2-AEA2-55C6239F864A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F93D786A-3B45-44E2-AEA2-55C6239F864A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F93D786A-3B45-44E2-AEA2-55C6239F864A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F93D786A-3B45-44E2-AEA2-55C6239F864A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
