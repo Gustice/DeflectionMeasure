@@ -67,10 +67,8 @@ namespace MeasureDeflection.Processor
         public int SizeTolerance { get; set; }
         public int PositionTolerance { get; set; }
 
-        public short FilterRadius { get; set; } = 50;
-        public int MinSize { get; set; };
-
-
+        public short FilterRadius { get; set; } = 50; // @todo inject from Higher level
+        public int MinSize { get; set; }
 
         public object Clone()
         {

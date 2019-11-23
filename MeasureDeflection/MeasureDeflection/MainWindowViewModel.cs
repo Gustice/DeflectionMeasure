@@ -65,12 +65,12 @@ namespace MeasureDeflection
         /// </summary>
         public MainWindowViewModel(IFileHandler fHandler)
         {
-            Processor = new ImageProcessor(PromptNewMessage_Handler);
+            Processor = new MarkerScanner(PromptNewMessage_Handler);
 
             Assembly myAssembly = Assembly.GetExecutingAssembly();
             // Loading included picture by reflection               Namespace ...     Subdir ... ImageName
             Stream myStream = myAssembly.GetManifestResourceStream("MeasureDeflection.Pictures.Logo.png");
-            CamImage = ImageProcessor.Bitmap2BitmapImage(new System.Drawing.Bitmap(myStream));
+            CamImage = MarkerScanner.Bitmap2BitmapImage(new System.Drawing.Bitmap(myStream));
 
             VideoCaptureDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
             _lastSelectedVideoSourceIdx = 0;
@@ -193,7 +193,7 @@ namespace MeasureDeflection
         #endregion
 
         /// <summary> Image Processor of captured or loaded images </summary>
-        ImageProcessor Processor;
+        MarkerScanner Processor;
 
         VideoCaptureDevice _captureDevice;
         /// <summary> Source to capture images </summary>
@@ -243,6 +243,7 @@ namespace MeasureDeflection
         public ICommand LoadSaveImage_Command { get; set; }
         public ICommand SetAngleReference_Command { get; set; }
         public ICommand AngleList_Command { get; set; }
+        public ICommand Log_Command { get; set; }
 
 
         /// <summary>
@@ -407,7 +408,7 @@ namespace MeasureDeflection
         private void CaputerImage(NewFrameEventArgs eventArgs)
         {
             System.Drawing.Bitmap frame = (System.Drawing.Bitmap)eventArgs.Frame.Clone();
-            CamImage = ImageProcessor.Bitmap2BitmapImage(frame);
+            CamImage = MarkerScanner.Bitmap2BitmapImage(frame);
 
             ProcessImage(currentTolerance);
         }
@@ -426,7 +427,7 @@ namespace MeasureDeflection
                 BitmapSource bitmapSource = CamImage as BitmapSource;
                 pixelPos = ImageHelper.GetXYPosInFrame(imageFrame, hoverPos);
 
-                Color acvrgColor = ImageProcessor.GetAvarageColor(CamImage as BitmapSource, (int)pixelPos.X, (int)pixelPos.Y, PickerRadius);
+                Color acvrgColor = MarkerScanner.GetAvarageColor(CamImage as BitmapSource, (int)pixelPos.X, (int)pixelPos.Y, PickerRadius);
 
                 switch (ColorCaptureMode)
                 {
@@ -461,7 +462,7 @@ namespace MeasureDeflection
                             var profile = SetSearchProfile(pixelPos, AnchorColor);
                             TipSelectionActive = true;
 
-                            var img = Processor.SetAnchorProperty(CamImage, profile);
+                            var img = Processor.TryToSetAnchor(CamImage, profile);
                             img.Freeze();
                             ProcessedImage = img;
                         }
@@ -471,7 +472,7 @@ namespace MeasureDeflection
                         {
                             var profile = SetSearchProfile(pixelPos, MovingTipColor);
 
-                            var img = Processor.SetMovingTipProperty(CamImage, profile);
+                            var img = Processor.TryToSetTip(CamImage, profile);
                             img.Freeze();
                             ProcessedImage = img;
                         }

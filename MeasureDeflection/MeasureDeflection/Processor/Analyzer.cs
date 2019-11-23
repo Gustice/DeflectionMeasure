@@ -26,7 +26,7 @@ namespace MeasureDeflection.Processor
         public Blob[] FindBlobs(TargetProfile current, BitmapImage camImage)
         {
             PorcessedImg = BitmapImage2Bitmap(camImage);
-            BlobCounter blobCounter = AnalyzePicture(Profile.Anchor.Current, PorcessedImg);
+            BlobCounter blobCounter = AnalyzePicture(current, PorcessedImg);
             blobCounter.ProcessImage(PorcessedImg);
             return blobCounter.GetObjectsInformation();
         }

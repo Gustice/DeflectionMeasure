@@ -114,7 +114,6 @@ namespace MeasureDeflection
 
                 default:
                     throw new Exception($"Click event source {btn.Name} was not considered hier");
-                    break;
             }
         }
 

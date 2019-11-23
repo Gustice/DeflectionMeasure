@@ -66,7 +66,7 @@ namespace MeasureDeflection
 
 
         // Note this Function is optimized for round blobs
-        internal ImageSource SetAnchorProperty(BitmapImage camImage, TargetProfile anchorTarget)
+        internal ImageSource TryToSetAnchor(BitmapImage camImage, TargetProfile anchorTarget)
         {
             _initFinished = false;
             AnchorPoint = TipPoint = null;
@@ -124,7 +124,7 @@ namespace MeasureDeflection
             return blobs;
         }
 
-        internal ImageSource SetMovingTipProperty(BitmapImage camImage, TargetProfile movingTipTarget)
+        internal ImageSource TryToSetTip(BitmapImage camImage, TargetProfile movingTipTarget)
         {
             TipPoint = null;
 
@@ -334,7 +334,6 @@ namespace MeasureDeflection
 
             List<Blob> rest = new List<Blob>();
             
-            int j = 0;
             foreach (Blob blob in blobs)
             {
                 System.Drawing.Rectangle rect = blob.Rectangle;
