@@ -19,7 +19,7 @@ using MeasureDeflection.Processor;
 
 namespace MeasureDeflection
 {
-    class ImageProcessor
+    class MarkerScanner
     {
         private bool _initFinished;
         /// <summary>
@@ -361,7 +361,7 @@ namespace MeasureDeflection
         BlobCentre _movingTip = new BlobCentre();
         private Action<UserPrompt.eNotifyType, string> _promptNewMessage_Handler;
 
-        public ImageProcessor(Action<UserPrompt.eNotifyType, string> promptNewMessage_Handler)
+        public MarkerScanner(Action<UserPrompt.eNotifyType, string> promptNewMessage_Handler)
         {
             _promptNewMessage_Handler = promptNewMessage_Handler;
         }
