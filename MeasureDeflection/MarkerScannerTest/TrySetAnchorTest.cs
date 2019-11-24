@@ -12,16 +12,31 @@ using MeasureDeflection.Processor;
 
 using MarkerScannerTest.Utils;
 using System.IO;
+using MarkerScannerTest.Properties;
 
 namespace MarkerScannerTest
 {
     [TestClass]
     public class TrySetAnchorTest
     {
+        bool PicFolderPresent = false;
+        string Path2Exe;
+        string Path2Proj;
+        string Path2Image;
+
+
+        public TrySetAnchorTest()
+        {
+            Path2Exe = AppDomain.CurrentDomain.BaseDirectory;
+            Path2Proj = Directory.GetParent(Directory.GetParent(Path2Exe).ToString()).ToString();
+            Path2Image = Path.Combine(Path2Proj, "GeneratedPics");
+        }
+
+
         [TestMethod]
         public void TestMethod1()
         {
-            ImageGenerator generator = new ImageGenerator();
+            ImageGenerator generator = new ImageGenerator("TestImage");
             Marker vAncor = new Marker()
             {
                 C = new Point(300, 300),
@@ -30,17 +45,24 @@ namespace MarkerScannerTest
                 Border = Colors.Gray
             };
 
-            generator.AddAnchorToImage(vAncor);
-            var img = generator.RenderImage();
+            //generator.AddAnchorToImage(vAncor);
+            //var img = generator.RenderImage();
+            var img = generator.TestImage;
+
+            if (Directory.Exists(Path.Combine(Path2Proj, Path2Image)))
+                PicFolderPresent = true;
+
+            string fileName = Path.Combine(Path2Image, "empty.png");
+            
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(img.Source as BitmapSource));
+            using (Stream stm = File.Create(fileName))  {
+                encoder.Save(stm);
+            }
 
 
-            FileStream stream = new FileStream("empty.jpg", FileMode.Create);
-            var encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(img as BitmapImage));
-            encoder.Save(stream);
 
             MarkerScanner sut = new MarkerScanner(PromptNewMessage_Handler);
-
         }
 
 

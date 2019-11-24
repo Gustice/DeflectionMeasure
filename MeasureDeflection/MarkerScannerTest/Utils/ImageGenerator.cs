@@ -1,15 +1,17 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
-using System.IO;
-using System.Windows.Media;
 using System.Windows;
+using System.Windows.Media.Imaging;
+using System.Windows.Media;
+using System.Windows.Controls;
 
 using MeasureDeflection.Utils;
 using MeasureDeflection.Processor;
+using System.Globalization;
 
 namespace MarkerScannerTest.Utils
 {
@@ -18,23 +20,36 @@ namespace MarkerScannerTest.Utils
         const int DefaultWidth = 1280;
         const int DefaultHeight = 1024;
 
+
+        public Image TestImage { get; private set; }
         DrawingVisual Visual;
         DrawingContext Context;
 
-        public ImageGenerator()
+        public ImageGenerator(string description)
         {
-            DrawingVisual visual = new DrawingVisual();
-            Context = visual.RenderOpen();
+            TestImage = new Image();
+            FormattedText text = new FormattedText(description,
+                    new CultureInfo("de-de"),
+                    FlowDirection.LeftToRight,
+                    new Typeface("Cambria"),
+                    12,
+                    Brushes.Gray, 
+                    VisualTreeHelper.GetDpi(TestImage).PixelsPerDip);
+            
+            Visual = new DrawingVisual();
+            
+            Context = Visual.RenderOpen();
 
-            var background = Brushes.White;
-            Context.DrawRectangle(background, new Pen(), new Rect(0, 0, DefaultWidth, DefaultHeight));
-        }
+            var background = Brushes.Yellow;
+            Context.DrawRectangle(background, new Pen(Brushes.Red,3), new Rect(0, 0, DefaultWidth, DefaultHeight));
+            Context.DrawText(text, new Point(2, 2));
 
-        ~ImageGenerator()
-        {
             Context.Close();
-        }
 
+            RenderTargetBitmap bmp = new RenderTargetBitmap(DefaultWidth, DefaultHeight, 96, 96, PixelFormats.Pbgra32);
+            bmp.Render(Visual);
+            TestImage.Source = bmp;
+        }
 
         public void AddAnchorToImage(Marker anchor)
         {
@@ -43,7 +58,6 @@ namespace MarkerScannerTest.Utils
                 Pen stroke = new Pen(border, 3);
                 
                 Context.DrawEllipse(fill, stroke, anchor.C, anchor.D/2, anchor.D / 2);
-
         }
 
 
@@ -51,11 +65,12 @@ namespace MarkerScannerTest.Utils
         {
             RenderTargetBitmap bitmap = new RenderTargetBitmap(DefaultWidth, DefaultHeight, 96, 96, PixelFormats.Pbgra32);
             bitmap.Render(Visual);
-
-            BitmapSource image = ((BitmapSource)bitmap);
-            image.Freeze();
             
+            BitmapSource image = bitmap;
+            image.Freeze();
+            Context.Close();
             return image;
+
         }
 
 
