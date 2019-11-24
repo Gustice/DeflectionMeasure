@@ -17,11 +17,10 @@ namespace MarkerScannerTest.Utils
 {
     public class ImageGenerator
     {
-        const int DefaultWidth = 1280;
-        const int DefaultHeight = 1024;
+        public const int DefaultWidth = 1280;
+        public const int DefaultHeight = 1024;
 
-
-        public Image TestImage { get; private set; }
+        Image TestImage;
         DrawingVisual Visual;
         DrawingContext Context;
 
@@ -34,43 +33,36 @@ namespace MarkerScannerTest.Utils
                     new Typeface("Cambria"),
                     12,
                     Brushes.Gray, 
-                    VisualTreeHelper.GetDpi(TestImage).PixelsPerDip);
+                    96 );
+            text.TextAlignment = TextAlignment.Right;
             
             Visual = new DrawingVisual();
             
             Context = Visual.RenderOpen();
+            Context.DrawRectangle(Brushes.White, new Pen(Brushes.Black,3), new Rect(0, 0, DefaultWidth, DefaultHeight));
 
-            var background = Brushes.Yellow;
-            Context.DrawRectangle(background, new Pen(Brushes.Red,3), new Rect(0, 0, DefaultWidth, DefaultHeight));
-            Context.DrawText(text, new Point(2, 2));
-
-            Context.Close();
-
-            RenderTargetBitmap bmp = new RenderTargetBitmap(DefaultWidth, DefaultHeight, 96, 96, PixelFormats.Pbgra32);
-            bmp.Render(Visual);
-            TestImage.Source = bmp;
+            Context.DrawText(text, new Point(DefaultWidth-2, DefaultHeight-2-text.Height));
         }
 
         public void AddAnchorToImage(Marker anchor)
         {
                 var fill = new SolidColorBrush(anchor.Fill);
                 var border = new SolidColorBrush(anchor.Border);
-                Pen stroke = new Pen(border, 3);
+                Pen stroke = new Pen(border, 1);
                 
-                Context.DrawEllipse(fill, stroke, anchor.C, anchor.D/2, anchor.D / 2);
+                Context.DrawEllipse(fill, stroke, anchor.Center, anchor.Diameter/2, anchor.Diameter / 2);
         }
 
 
-        public BitmapSource RenderImage()
+        public Image RenderImage()
         {
-            RenderTargetBitmap bitmap = new RenderTargetBitmap(DefaultWidth, DefaultHeight, 96, 96, PixelFormats.Pbgra32);
-            bitmap.Render(Visual);
-            
-            BitmapSource image = bitmap;
-            image.Freeze();
             Context.Close();
-            return image;
+            RenderTargetBitmap bmp = new RenderTargetBitmap(DefaultWidth, DefaultHeight, 96, 96, PixelFormats.Pbgra32);
+            bmp.Render(Visual);
+            TestImage.Source = bmp;
+            TestImage.Source.Freeze();
 
+            return TestImage;
         }
 
 
@@ -83,8 +75,8 @@ namespace MarkerScannerTest.Utils
 
     public class Marker
     {
-        public Point C { get; set; }
-        public double D { get; set; }
+        public Point Center { get; set; }
+        public double Diameter { get; set; }
         public Color Fill { get; set; }
         public Color Border { get; set; }
 

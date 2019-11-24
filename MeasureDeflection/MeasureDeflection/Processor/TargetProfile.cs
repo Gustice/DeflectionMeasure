@@ -62,7 +62,7 @@ namespace MeasureDeflection.Processor
     public class TargetProfile : ICloneable
     {
         public BlobCentre Centre { get; set; }
-        public RGB Color { get; set; }
+        public System.Drawing.Color Color { get; set; }
         public int TargetSize { get; set; }
         public int SizeTolerance { get; set; }
         public int PositionTolerance { get; set; }
@@ -74,7 +74,7 @@ namespace MeasureDeflection.Processor
         {
             var clone = new TargetProfile();
             clone.Centre = (BlobCentre)Centre.Clone();
-            clone.Color = new RGB(Color.Red, Color.Green, Color.Blue);
+            clone.Color = Color;
             clone.TargetSize = TargetSize;
             clone.SizeTolerance = SizeTolerance;
             clone.PositionTolerance = PositionTolerance;
@@ -90,13 +90,13 @@ namespace MeasureDeflection.Processor
         /// <summary> Center Point </summary>
         Point C { get; set; } = new Point();
 
-        /// <summary> X position </summary>
+        /// <summary> X pixel position </summary>
         public double X { get; set; }
 
-        /// <summary> Y position </summary>
+        /// <summary> Y pixel position </summary>
         public double Y { get; set; }
 
-        /// <summary> Diameter </summary>
+        /// <summary> Pixel diameter </summary>
         public double D { get; set; }
 
         public object Clone()

@@ -13,6 +13,7 @@ using MeasureDeflection.Processor;
 using MarkerScannerTest.Utils;
 using System.IO;
 using MarkerScannerTest.Properties;
+using System.Reflection;
 
 namespace MarkerScannerTest
 {
@@ -24,51 +25,76 @@ namespace MarkerScannerTest
         string Path2Proj;
         string Path2Image;
 
+        private string myVar;
+
+        public string MyProperty
+        {
+            get { return myVar; }
+            set { myVar = value; }
+        }
+
+
 
         public TrySetAnchorTest()
         {
             Path2Exe = AppDomain.CurrentDomain.BaseDirectory;
             Path2Proj = Directory.GetParent(Directory.GetParent(Path2Exe).ToString()).ToString();
-            Path2Image = Path.Combine(Path2Proj, "GeneratedPics");
+            Path2Image = Path.Combine(Path2Proj, "GeneratedTestPics");
+
+            if (Directory.Exists(Path.Combine(Path2Proj, Path2Image)))
+                PicFolderPresent = true;
         }
 
 
         [TestMethod]
         public void TestMethod1()
         {
-            ImageGenerator generator = new ImageGenerator("TestImage");
+            var test = new TestDescription(MethodBase.GetCurrentMethod().Name);
+            ImageGenerator generator = new ImageGenerator(test.Name);
             Marker vAncor = new Marker()
             {
-                C = new Point(300, 300),
-                D = 10,
+                Center = new Point(300, 300),
+                Diameter = 20,
                 Fill = Colors.Yellow,
                 Border = Colors.Gray
             };
 
-            //generator.AddAnchorToImage(vAncor);
-            //var img = generator.RenderImage();
-            var img = generator.TestImage;
+            generator.AddAnchorToImage(vAncor);
+            var img = generator.RenderImage();
 
-            if (Directory.Exists(Path.Combine(Path2Proj, Path2Image)))
-                PicFolderPresent = true;
-
-            string fileName = Path.Combine(Path2Image, "empty.png");
+            string fileName = Path.Combine(Path2Image, test.FileName_Image);
             
             var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(img.Source as BitmapSource));
+            var frame = BitmapFrame.Create(img.Source as BitmapSource);
+            encoder.Frames.Add(frame);
+
             using (Stream stm = File.Create(fileName))  {
                 encoder.Save(stm);
             }
 
+            var sut = new MarkerScanner(PromptNewMessage_Handler);
+            var profile = new TargetProfile() { Centre = new BlobCentre() { X = 300, Y = 300}, Color = SetColor(vAncor.Fill) };
+            var pImg = sut.TryToSetAnchor(img.Source as BitmapImage, profile);
 
+            var encoder2 = new PngBitmapEncoder();
+            var frame2 = BitmapFrame.Create(pImg as BitmapSource);
+            encoder.Frames.Add(frame2);
 
-            MarkerScanner sut = new MarkerScanner(PromptNewMessage_Handler);
+            string fileNameProcessed = Path.Combine(Path2Image, test.FileName_Processed);
+            using (Stream stm = File.Create(fileNameProcessed))
+            {
+                encoder.Save(stm);
+            }
         }
 
 
 
 
-
+        System.Drawing.Color SetColor(Color color)
+        {
+            System.Drawing.Color c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
+            return c;
+        }
 
 
         List<string> MyLog = new List<string>();
@@ -85,4 +111,21 @@ namespace MarkerScannerTest
         }
 
     }
+
+    class TestDescription
+    {
+        public const string FileExtension = "png";
+
+        public string Name { get; }
+
+        public string FileName_Image => $"{Name}.{FileExtension}";
+        public string FileName_Processed => $"{Name}_Processed.{FileExtension}";
+
+        public TestDescription(string name)
+        {
+            Name = name;
+        }
+    }
+
+
 }

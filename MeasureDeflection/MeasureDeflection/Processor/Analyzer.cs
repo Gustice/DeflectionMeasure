@@ -34,7 +34,7 @@ namespace MeasureDeflection.Processor
         public BlobCounter AnalyzePicture(TargetProfile target, System.Drawing.Bitmap porcessedImg)
         {
             EuclideanColorFiltering filter = new EuclideanColorFiltering();
-            filter.CenterColor = target.Color;
+            filter.CenterColor = new RGB(target.Color);
             filter.Radius = target.FilterRadius;
             filter.ApplyInPlace(porcessedImg);
 

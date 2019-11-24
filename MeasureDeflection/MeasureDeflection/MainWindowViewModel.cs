@@ -491,7 +491,7 @@ namespace MeasureDeflection
         {
             var point = new TargetProfile();
             point.Centre = new BlobCentre { X = (int)pixelPos.X, Y = (int)pixelPos.Y };
-            point.Color = new AForge.Imaging.RGB(color.R, color.G, color.B);
+            point.Color = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
             return point;
         }
 
