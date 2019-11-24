@@ -20,13 +20,13 @@ namespace MarkerScannerTest.Utils
         public const int DefaultWidth = 1280;
         public const int DefaultHeight = 1024;
 
-        Image TestImage;
+        BitmapSource Image;
         DrawingVisual Visual;
         DrawingContext Context;
 
         public ImageGenerator(string description)
         {
-            TestImage = new Image();
+            Image = new BitmapImage();
             FormattedText text = new FormattedText(description,
                     new CultureInfo("de-de"),
                     FlowDirection.LeftToRight,
@@ -54,15 +54,16 @@ namespace MarkerScannerTest.Utils
         }
 
 
-        public Image RenderImage()
+        public BitmapSource RenderImage()
         {
             Context.Close();
             RenderTargetBitmap bmp = new RenderTargetBitmap(DefaultWidth, DefaultHeight, 96, 96, PixelFormats.Pbgra32);
             bmp.Render(Visual);
-            TestImage.Source = bmp;
-            TestImage.Source.Freeze();
 
-            return TestImage;
+            //Image.Source = bmp;
+            //Image.Source.Freeze();
+            Image = bmp;
+            return Image;
         }
 
 

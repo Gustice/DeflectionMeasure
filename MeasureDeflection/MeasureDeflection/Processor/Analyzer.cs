@@ -23,7 +23,7 @@ namespace MeasureDeflection.Processor
     {
         public System.Drawing.Bitmap PorcessedImg { get; private set; }
 
-        public Blob[] FindBlobs(TargetProfile current, BitmapImage camImage)
+        public Blob[] FindBlobs(TargetProfile current, BitmapSource camImage)
         {
             PorcessedImg = BitmapImage2Bitmap(camImage);
             BlobCounter blobCounter = AnalyzePicture(current, PorcessedImg);
@@ -51,7 +51,7 @@ namespace MeasureDeflection.Processor
             return blobCounter;
         }
 
-        public static System.Drawing.Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
+        public static System.Drawing.Bitmap BitmapImage2Bitmap(BitmapSource bitmapImage)
         {
             using (MemoryStream outStream = new MemoryStream())
             {

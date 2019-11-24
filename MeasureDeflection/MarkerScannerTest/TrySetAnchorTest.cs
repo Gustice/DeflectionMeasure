@@ -65,7 +65,7 @@ namespace MarkerScannerTest
             string fileName = Path.Combine(Path2Image, test.FileName_Image);
             
             var encoder = new PngBitmapEncoder();
-            var frame = BitmapFrame.Create(img.Source as BitmapSource);
+            var frame = BitmapFrame.Create(img);
             encoder.Frames.Add(frame);
 
             using (Stream stm = File.Create(fileName))  {
@@ -74,16 +74,16 @@ namespace MarkerScannerTest
 
             var sut = new MarkerScanner(PromptNewMessage_Handler);
             var profile = new TargetProfile() { Centre = new BlobCentre() { X = 300, Y = 300}, Color = SetColor(vAncor.Fill) };
-            var pImg = sut.TryToSetAnchor(img.Source as BitmapImage, profile);
+            var pImg = sut.TryToSetAnchor(img, profile);
 
             var encoder2 = new PngBitmapEncoder();
             var frame2 = BitmapFrame.Create(pImg as BitmapSource);
-            encoder.Frames.Add(frame2);
+            encoder2.Frames.Add(frame2);
 
             string fileNameProcessed = Path.Combine(Path2Image, test.FileName_Processed);
             using (Stream stm = File.Create(fileNameProcessed))
             {
-                encoder.Save(stm);
+                encoder2.Save(stm);
             }
         }
 

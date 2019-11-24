@@ -66,7 +66,7 @@ namespace MeasureDeflection
 
 
         // Note this Function is optimized for round blobs
-        public ImageSource TryToSetAnchor(BitmapImage camImage, TargetProfile anchorTarget)
+        public ImageSource TryToSetAnchor(BitmapSource camImage, TargetProfile anchorTarget)
         {
             _initFinished = false;
             AnchorPoint = TipPoint = null;
@@ -107,7 +107,7 @@ namespace MeasureDeflection
             return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
-        private Blob[] TryToFindBlob(BitmapImage camImage, TargetProfile target)
+        private Blob[] TryToFindBlob(BitmapSource camImage, TargetProfile target)
         {
             Blob[] blobs;
             target.MinSize = Math.Min(camImage.PixelWidth, camImage.PixelHeight) / 10;
