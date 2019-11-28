@@ -69,6 +69,7 @@ namespace MeasureDeflection.Processor
 
         public short FilterRadius { get; set; } = 50; // @todo inject from Higher level
         public int MinSize { get; set; }
+        public int MaxSize { get; set; }
 
         public object Clone()
         {
@@ -88,7 +89,7 @@ namespace MeasureDeflection.Processor
     public class BlobCentre : ICloneable
     {
         /// <summary> Center Point </summary>
-        Point C { get; set; } = new Point();
+        public Point C { get; set; } = new Point();
 
         /// <summary> X pixel position </summary>
         public double X { get; set; }
@@ -99,13 +100,24 @@ namespace MeasureDeflection.Processor
         /// <summary> Pixel diameter </summary>
         public double D { get; set; }
 
+        public BlobCentre()
+        {
+            X = Y = D = 0;
+            C = new Point();
+        }
+
+        public BlobCentre(double x, double y, double d)
+        {
+            X = x;
+            Y = y;
+            D = d;
+            C = new Point(x, y);
+        }
+
         public object Clone()
         {
-            var clone = new BlobCentre();
+            var clone = new BlobCentre(X,Y,D);
             clone.C = new Point(C.X, C.Y);
-            clone.X = X;
-            clone.Y = Y;
-            clone.D = D;
 
             return clone;
         }

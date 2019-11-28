@@ -65,7 +65,7 @@ namespace MeasureDeflection
         /// </summary>
         public MainWindowViewModel(IFileHandler fHandler)
         {
-            Processor = new MarkerScanner(PromptNewMessage_Handler);
+            Processor = new MarkerScanner(PromptNewMessage_Handler, OnAnchorSetEvent, OnMovingTipSetEvent);
 
             Assembly myAssembly = Assembly.GetExecutingAssembly();
             // Loading included picture by reflection               Namespace ...     Subdir ... ImageName
@@ -412,6 +412,17 @@ namespace MeasureDeflection
 
             ProcessImage(currentTolerance);
         }
+
+        void OnAnchorSetEvent(BlobCentre anchor)
+        {
+
+        }
+
+        void OnMovingTipSetEvent(BlobCentre movingTip)
+        {
+
+        }
+
 
         /// <summary>
         /// Gets pixel position in preview image and sets anchor and moving acording to the local color

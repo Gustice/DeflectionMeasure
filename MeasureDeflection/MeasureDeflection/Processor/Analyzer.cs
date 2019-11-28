@@ -16,6 +16,7 @@ using System.Drawing.Drawing2D;
 
 using MeasureDeflection.Utils;
 using MeasureDeflection.Processor;
+using MeasureDeflection.Properties;
 
 namespace MeasureDeflection.Processor
 {
@@ -23,12 +24,17 @@ namespace MeasureDeflection.Processor
     {
         public System.Drawing.Bitmap PorcessedImg { get; private set; }
 
-        public Blob[] FindBlobs(TargetProfile current, BitmapSource camImage)
+        public Analyzer()
+        {
+            PorcessedImg = new System.Drawing.Bitmap(Resources.Error);
+        }
+
+        public List<Blob> FindBlobs(TargetProfile current, BitmapSource camImage)
         {
             PorcessedImg = BitmapImage2Bitmap(camImage);
             BlobCounter blobCounter = AnalyzePicture(current, PorcessedImg);
             blobCounter.ProcessImage(PorcessedImg);
-            return blobCounter.GetObjectsInformation();
+            return blobCounter.GetObjectsInformation().ToList<Blob>();
         }
 
         public BlobCounter AnalyzePicture(TargetProfile target, System.Drawing.Bitmap porcessedImg)
@@ -43,6 +49,7 @@ namespace MeasureDeflection.Processor
             blobCounter.MinHeight = target.MinSize;
             blobCounter.FilterBlobs = true;
             blobCounter.ObjectsOrder = ObjectsOrder.Size;
+            blobCounter.MaxWidth = blobCounter.MaxHeight = target.MaxSize;
 
             System.Drawing.Imaging.BitmapData objectsData = porcessedImg.LockBits(new System.Drawing.Rectangle(0, 0, porcessedImg.Width, porcessedImg.Height), ImageLockMode.ReadOnly, porcessedImg.PixelFormat);
             Grayscale grayscaleFilter = new Grayscale(0.2125, 0.7154, 0.0721);

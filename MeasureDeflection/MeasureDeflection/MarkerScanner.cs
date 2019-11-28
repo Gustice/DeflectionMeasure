@@ -25,7 +25,7 @@ namespace MeasureDeflection
         /// <summary>
         /// Uper layer indication for finieshed initialization
         /// </summary>
-        public bool InitFinisched 
+        public bool InitFinisched
         {
             get { return _initFinished; }
         }
@@ -37,18 +37,20 @@ namespace MeasureDeflection
         private OperationMode Operation
         {
             get { return _operation; }
-            set {
+            set
+            {
                 _operation = value;
 
                 _initFinished = false;
-                if ((int)_operation >= (int)OperationMode.MovingTipSetImplicitly)
+                if ((int)_operation >= (int)OperationMode.MovingTipIsSet)
                     _initFinished = true;
             }
         }
 
         TargetProfile lastAnchorTarget;
         TargetProfile lastMovingTipTarget;
-        AnchorTipPair Profile { get; set; }
+
+        public AnchorTipPair Profile { get; private set; }
 
 
         /// <summary>
@@ -65,117 +67,67 @@ namespace MeasureDeflection
         public BlobCentre TipPoint { get; private set; }
 
 
+
+
         // Note this Function is optimized for round blobs
         public ImageSource TryToSetAnchor(BitmapSource camImage, TargetProfile anchorTarget)
         {
             _initFinished = false;
             AnchorPoint = TipPoint = null;
-            Blob[] blobs;
 
-            blobs = TryToFindBlob(camImage, anchorTarget);
-            if (blobs.Length == 0)
-            {
-                PromptMessage(UserPrompt.eNotifyType.Warning, "Anchor point not found");
+            var result = SearchMarkers("Anchor", camImage, anchorTarget);
+            if (result.Target == null)
                 return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
-            }
 
-            Blob[] remains;
-            Blob foundAnchor = ScanTargetBlob(anchorTarget.Centre, blobs, 0, out remains);
-            if (foundAnchor != null)
+            Operation = OperationMode.AnchorIsSet;
+            PromptMessage(UserPrompt.eNotifyType.Note, $"Anchor point set");
+
+            AnchorPoint = anchorTarget.Centre = GetBlopCentre(result.Target);
+            _anchroSetEvent?.Invoke(AnchorPoint);
+            
+            var target = SetMarkerProperties(anchorTarget, result.Target);
+            Profile = new AnchorTipPair(target);
+
+            if (result.Remaining.Count == 1)
             {
-                Operation = OperationMode.AnchorIsSet;
-                PromptMessage(UserPrompt.eNotifyType.Note, "Anchor point set");
+                PromptMessage(UserPrompt.eNotifyType.Note, "Anchor point set - Remaining dot preset as moving tip");
+                Operation = OperationMode.MovingTipIsSet;
 
-                AnchorPoint = GetBlopCentre(foundAnchor);
-                anchorTarget.MinSize = (int)((foundAnchor.Rectangle.Height + foundAnchor.Rectangle.Width) / 2 * 0.7);
-                Profile = new AnchorTipPair(anchorTarget);
+                TargetProfile tipTarget = (TargetProfile)anchorTarget.Clone();
+                TipPoint = tipTarget.Centre = GetBlopCentre(result.Remaining[0]);
+                _MovingTipSetEvent?.Invoke(TipPoint);
 
-                if (remains.Length == 1)
-                {
-                    PromptMessage(UserPrompt.eNotifyType.Note, "Anchor point set - Remaining dot preset as moving tip");
-                    Operation = OperationMode.MovingTipSetImplicitly;
-
-                    TargetProfile tipTarget = (TargetProfile)anchorTarget.Clone();
-                    tipTarget.Centre = GetBlopCentre(remains[0]);
-
-                    Profile.AddTipProfile(tipTarget);
-                }
+                Profile.AddTipProfile(tipTarget);
             }
-            else
-                PromptMessage(UserPrompt.eNotifyType.Warning, "Anchor point not found");
 
             return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
-        private Blob[] TryToFindBlob(BitmapSource camImage, TargetProfile target)
-        {
-            Blob[] blobs;
-            target.MinSize = Math.Min(camImage.PixelWidth, camImage.PixelHeight) / 10;
-            do
-            {
-                blobs = PicAnalyzer.FindBlobs(target, camImage);
-                if (blobs.Length == 0)
-                {
-                    PromptMessage(UserPrompt.eNotifyType.Note, $"Unable to find reference point with size {target.MinSize}. Reduzing size constraint");
-                    target.MinSize = target.MinSize / 2;
-                }
-
-            } while (blobs.Length > 0 && target.MinSize > 5);
-            return blobs;
-        }
-
-        public ImageSource TryToSetTip(BitmapImage camImage, TargetProfile movingTipTarget)
+        public ImageSource TryToSetTip(BitmapSource camImage, TargetProfile movingTipTarget)
         {
             TipPoint = null;
 
-            if ((int)Operation >= (int)OperationMode.AnchorIsSet)
+            if ((int)Operation < (int)OperationMode.AnchorIsSet)
             {
                 PromptMessage(UserPrompt.eNotifyType.Warning, "Please specify anchor first");
                 return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
             }
 
-            Profile.AddTipProfile(movingTipTarget);
-            Blob[] blobs = PicAnalyzer.FindBlobs(Profile.MovingTip.Current, camImage);
-
-            if (blobs.Length == 0)
-            {
-                PromptMessage(UserPrompt.eNotifyType.Warning, "Moving tip point not found");
+            var result = SearchMarkers("Moving tip", camImage, movingTipTarget);
+            if (result.Target == null)
                 return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
-            }
 
-            Blob[] remains;
-            Blob foundMovingTip = ScanTargetBlob(movingTipTarget.Centre, blobs, 0, out remains);
-            if (foundMovingTip != null)
-            {
-                PromptMessage(UserPrompt.eNotifyType.Note, "Moving tip point set");
-                Operation = OperationMode.ExplicitSetMovingTip;
+            Operation = OperationMode.MovingTipIsSet;
+            PromptMessage(UserPrompt.eNotifyType.Note, "Moving tip point set");
 
-                movingTipTarget.MinSize = (int)((foundMovingTip.Rectangle.Height + foundMovingTip.Rectangle.Width) / 2 * 0.7);
+            TipPoint = movingTipTarget.Centre = GetBlopCentre(result.Target);
+            _MovingTipSetEvent?.Invoke(TipPoint);
 
-                TargetProfile tipTarget = (TargetProfile)movingTipTarget.Clone();
-                tipTarget.Centre = GetBlopCentre(foundMovingTip);
-                Profile.AddTipProfile(tipTarget);
-            }
-            else { PromptMessage(UserPrompt.eNotifyType.Warning, "Moving tip point not found"); }
-
+            var target = SetMarkerProperties(movingTipTarget, result.Target);
+            Profile.AddTipProfile(target);
 
             return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
-
-        private static BlobCentre GetBlopCentre(Blob blob)
-        {
-            BlobCentre aP = new BlobCentre() {
-                X = blob.CenterOfGravity.X,
-                Y = blob.CenterOfGravity.Y,
-                D = (blob.Rectangle.Width + blob.Rectangle.Height) / 2
-            };
-
-            return aP;
-        }
-
-
-
-
 
         public RenderTargetBitmap ProcessImage(BitmapImage camImage, double tolerancefactor, out BlobCentre aP, out BlobCentre mtP)
         {
@@ -195,46 +147,14 @@ namespace MeasureDeflection
                     PromptMessage(UserPrompt.eNotifyType.Warning, "Moving point not found. Please specify Moving point first");
                     break;
 
-                case OperationMode.MovingTipSetImplicitly:
+                case OperationMode.MovingTipIsSet:
                     {
-                        Blob[] blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
-
-                        if (blobs.Length >= 1)
-                        {
-                            Blob[] remains;
-                            Blob foundAnchor = ScanTargetBlob(lastAnchorTarget.Centre, blobs, tolerance, out remains);
-                            if (foundAnchor != null)
-                            {
-                                aP = GetBlopCentre(foundAnchor);
-                                lastAnchorTarget.Centre = aP;
-
-                                if (remains.Length >= 1)
-                                {
-                                    Blob foundMovingTip = ScanTargetBlob(lastMovingTipTarget.Centre, remains, tolerance,  out remains);
-                                    if (foundMovingTip != null)
-                                    {
-                                        mtP = GetBlopCentre(foundMovingTip);
-                                        lastMovingTipTarget.Centre = mtP;
-                                    }
-                                }
-                            }
-                            else { PromptMessage(UserPrompt.eNotifyType.Warning, "Anchor point not found"); }
-                        }
-                        else { PromptMessage(UserPrompt.eNotifyType.Warning, "Anchor point not found"); }
-                        filterImage = Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
-                    }
-                    break;
-
-                case OperationMode.ExplicitSetMovingTip:
-                    {
-                        Blob[] blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
+                        var blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
                         var anchorView = (System.Drawing.Bitmap)PicAnalyzer.PorcessedImg.Clone();
 
-
-                        if (blobs.Length >= 1)
+                        if (blobs.Count >= 1)
                         {
-                            Blob[] remains;
-                            Blob foundAnchor = ScanTargetBlob(lastAnchorTarget.Centre, blobs, 0, out remains);
+                            var foundAnchor = SpareOutTargetBlobFromList(lastAnchorTarget.Centre, blobs, tolerance);
                             if (foundAnchor != null)
                             {
                                 aP = GetBlopCentre(foundAnchor);
@@ -247,10 +167,9 @@ namespace MeasureDeflection
                         blobs = PicAnalyzer.FindBlobs(Profile.Anchor.Last, camImage);
                         var movingTipView = (System.Drawing.Bitmap)PicAnalyzer.PorcessedImg.Clone();
 
-                        if (blobs.Length >= 1)
+                        if (blobs.Count >= 1)
                         {
-                            Blob[] remains;
-                            Blob foundAnchor = ScanTargetBlob(lastMovingTipTarget.Centre, blobs, 0, out remains);
+                            var foundAnchor = SpareOutTargetBlobFromList(lastMovingTipTarget.Centre, blobs, tolerance);
                             if (foundAnchor != null)
                             {
                                 mtP = GetBlopCentre(foundAnchor);
@@ -280,7 +199,7 @@ namespace MeasureDeflection
                     break;
             }
 
-            if(filterImage == null)
+            if (filterImage == null)
             {
                 filterImage = Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
 
@@ -328,12 +247,78 @@ namespace MeasureDeflection
             return rtb;
         }
 
-        private Blob ScanTargetBlob(BlobCentre anchorTarget, Blob[] blobs, int tolerance, out Blob[] remeins)
+
+
+
+
+
+
+
+
+
+
+
+        private MarkerScan SearchMarkers(string mName, BitmapSource camImage, TargetProfile anchorTarget)
+        {
+            var result = new MarkerScan();
+
+            var blobs = TryToFindBlob(camImage, anchorTarget);
+            if (blobs.Count == 0)
+            {
+                PromptMessage(UserPrompt.eNotifyType.Warning, $"No suitable marker for {mName} point not found");
+                return result;
+            }
+
+            result.Target = SpareOutTargetBlobFromList(anchorTarget.Centre, blobs, 0);
+            if (result.Target == null)
+            {
+                PromptMessage(UserPrompt.eNotifyType.Warning, $"{mName} point not found");
+                return result;
+            }
+            result.Remaining = blobs;
+
+            return result;
+        }
+
+
+        private TargetProfile SetMarkerProperties(TargetProfile target, Blob found)
+        {
+            target.Centre = AnchorPoint;
+            target.MinSize = (int)((found.Rectangle.Height + found.Rectangle.Width) / 2 * 0.7);
+
+            return target;
+        }
+
+        private List<Blob> TryToFindBlob(BitmapSource camImage, TargetProfile target)
+        {
+            List<Blob> blobs;
+            target.MinSize = Math.Min(camImage.PixelWidth, camImage.PixelHeight) / 10;
+            target.MaxSize = Math.Min(camImage.PixelWidth, camImage.PixelHeight) / 3;
+            do
+            {
+                blobs = PicAnalyzer.FindBlobs(target, camImage);
+                if (blobs.Count == 0)
+                {
+                    PromptMessage(UserPrompt.eNotifyType.Note, $"Unable to find reference point with size {target.MinSize}. Reduzing size constraint");
+                    target.MinSize = target.MinSize / 2;
+                }
+
+            } while (blobs.Count== 0 && target.MinSize > 5);
+            return blobs;
+        }
+
+        private static BlobCentre GetBlopCentre(Blob blob)
+        {
+            return new BlobCentre(blob.CenterOfGravity.X, blob.CenterOfGravity.Y, (blob.Rectangle.Width + blob.Rectangle.Height) / 2);
+        }
+
+                     
+
+
+        private Blob SpareOutTargetBlobFromList(BlobCentre anchorTarget, List<Blob> blobs, int tolerance)
         {
             Blob target = null;
 
-            List<Blob> rest = new List<Blob>();
-            
             foreach (Blob blob in blobs)
             {
                 System.Drawing.Rectangle rect = blob.Rectangle;
@@ -341,24 +326,29 @@ namespace MeasureDeflection
                 int y = rect.Y + (rect.Height / 2);
 
                 if (((anchorTarget.X > (rect.X - tolerance)) && (anchorTarget.X < (rect.X + rect.Width + tolerance)))
-                    && ((anchorTarget.Y > ( rect.Y - tolerance)) && (anchorTarget.Y < (rect.Y + rect.Height + tolerance))))
+                    && ((anchorTarget.Y > (rect.Y - tolerance)) && (anchorTarget.Y < (rect.Y + rect.Height + tolerance))))
+                {
                     target = blob;
-                else
-                    rest.Add(blob);
+                    blobs.Remove(blob);
+                    return target;
+                }
             }
-
-            remeins = rest.ToArray();
             return target;
         }
 
-
-        BlobCentre _anchor = new BlobCentre();
-        BlobCentre _movingTip = new BlobCentre();
         private Action<UserPrompt.eNotifyType, string> _promptNewMessage_Handler;
 
-        public MarkerScanner(Action<UserPrompt.eNotifyType, string> promptNewMessage_Handler)
+        public delegate void MarkerSetEvent(BlobCentre centre);
+
+        private MarkerSetEvent _anchroSetEvent;
+        private MarkerSetEvent _MovingTipSetEvent;
+
+        public MarkerScanner(Action<UserPrompt.eNotifyType, string> promptNewMessage_Handler, MarkerSetEvent anchroSet, MarkerSetEvent movingTipSet)
         {
             _promptNewMessage_Handler = promptNewMessage_Handler;
+
+            _anchroSetEvent = anchroSet;
+            _MovingTipSetEvent = movingTipSet;
         }
 
 
@@ -424,6 +414,12 @@ namespace MeasureDeflection
         }
 
 
+        public class MarkerScan
+        {
+            public Blob Target;
+            public List<Blob> Remaining;
+        }
+
         public class AnchorTipPair
         {
             public DynamicProfile Anchor { get; }
@@ -444,8 +440,7 @@ namespace MeasureDeflection
         {
             missingData,
             AnchorIsSet,
-            MovingTipSetImplicitly,
-            ExplicitSetMovingTip,
+            MovingTipIsSet,
         }
     }
 

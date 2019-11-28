@@ -44,7 +44,7 @@ namespace MarkerScannerTest.Utils
             Context.DrawText(text, new Point(DefaultWidth-2, DefaultHeight-2-text.Height));
         }
 
-        public void AddAnchorToImage(Marker anchor)
+        public void AddMarkerToImage(Marker anchor)
         {
                 var fill = new SolidColorBrush(anchor.Fill);
                 var border = new SolidColorBrush(anchor.Border);

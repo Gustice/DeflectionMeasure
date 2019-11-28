@@ -64,7 +64,10 @@
     </Compile>
     <Compile Include="TrySetAnchorTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TryToSetTipTest.cs" />
     <Compile Include="Utils\ImageGenerator.cs" />
+    <Compile Include="Utils\TestDescription.cs" />
+    <Compile Include="Utils\TestImageHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
