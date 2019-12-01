@@ -218,8 +218,8 @@ namespace MeasureDeflection
         PickerMode ColorCaptureMode = PickerMode.off;
         Vector currentDirectionVector;
         Vector referenceDireectionVector;
-        BlobCentre anchorPoint = new BlobCentre();
-        BlobCentre movingTipPoint = new BlobCentre();
+        BlobCentre _anchorPoint = new BlobCentre();
+        BlobCentre _movingTipPoint = new BlobCentre();
         int _sampleIteration = 0;
         int currentTolerance = 0;
         int _lastSelectedVideoSourceIdx;
@@ -352,7 +352,7 @@ namespace MeasureDeflection
 
             switch (action)
             {
-                case "SaveList": DotPosition.Add(new DotSamples(DotPosition.Count, anchorPoint.X, anchorPoint.Y, movingTipPoint.X, movingTipPoint.Y, CurrentAngle)); break;
+                case "SaveList": DotPosition.Add(new DotSamples(DotPosition.Count, _anchorPoint.X, _anchorPoint.Y, _movingTipPoint.X, _movingTipPoint.Y, CurrentAngle)); break;
 
                 case "CopyList":
                     string outTable = "Sample\tAnchor-X\ttAnchor-Y\tTip-X\tTip-Y\tAngle" + Environment.NewLine;
@@ -372,7 +372,7 @@ namespace MeasureDeflection
         /// </summary>
         private void SaveLogAction(object obj)
         {
-            DotPosition.Add(new DotSamples(DotPosition.Count, anchorPoint.X, anchorPoint.Y, movingTipPoint.X, movingTipPoint.Y, CurrentAngle));
+            DotPosition.Add(new DotSamples(DotPosition.Count, _anchorPoint.X, _anchorPoint.Y, _movingTipPoint.X, _movingTipPoint.Y, CurrentAngle));
         }
         #endregion
 
@@ -415,12 +415,12 @@ namespace MeasureDeflection
 
         void OnAnchorSetEvent(BlobCentre anchor)
         {
-
+            _anchorPoint = anchor;
         }
 
         void OnMovingTipSetEvent(BlobCentre movingTip)
         {
-
+            _movingTipPoint = movingTip;
         }
 
 
@@ -514,8 +514,7 @@ namespace MeasureDeflection
         {
             if (Processor.InitFinisched)
             {
-                BlobCentre aP, mTP;
-                var image = Processor.ProcessImage(CamImage, toleranceFactor, out aP, out mTP);
+                var image = Processor.ProcessImage(CamImage, toleranceFactor);
 
                 ImageSource imgb = ((ImageSource)image);
                 imgb.Freeze();
@@ -525,25 +524,23 @@ namespace MeasureDeflection
                 MovingTipPixelPosition = $"###.## / ###.##";
                 double angle = -361;
 
-                Point anchor = new Point();
-                Point movingTip = new Point();
-                if (aP != null)
+                Point aP = new Point(); 
+                Point mP = new Point();
+                if (_anchorPoint != null)
                 {
-                    anchor = new Point(aP.X, aP.Y);
-                    AnchorPixelPosition = $"{anchor.X:F2} / {anchor.Y:F2}";
-                    anchorPoint = aP;
+                    aP = _anchorPoint.C;
+                    AnchorPixelPosition = $"{aP.X:F2} / {aP.Y:F2}";
                 }
-                if (mTP != null)
+                if (_movingTipPoint != null)
                 {
-                    movingTip = new Point(mTP.X, mTP.Y);
-                    MovingTipPixelPosition = $"{movingTip.X:F2} / {movingTip.Y:F2}";
-                    movingTipPoint = mTP;
+                    mP = _movingTipPoint.C;
+                    MovingTipPixelPosition = $"{mP.X:F2} / {mP.Y:F2}";
                 }
 
-                if ((aP != null) && (mTP != null))
+                if ((aP != null) && (mP != null))
                 {
-                    Vector aV = new Vector(anchor.X, anchor.Y);
-                    Vector mtV = new Vector(movingTip.X, movingTip.Y);
+                    Vector aV = new Vector(aP.X, aP.Y);
+                    Vector mtV = new Vector(mP.X, mP.Y);
                     Vector dir = mtV - aV;
 
                     angle = Vector.AngleBetween(dir, referenceDireectionVector);

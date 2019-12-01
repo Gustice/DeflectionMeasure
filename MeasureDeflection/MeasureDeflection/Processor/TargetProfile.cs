@@ -113,6 +113,13 @@ namespace MeasureDeflection.Processor
             D = d;
             C = new Point(x, y);
         }
+        public BlobCentre(Point p, double d)
+        {
+            X = p.X;
+            Y = p.Y;
+            D = d;
+            C = p;
+        }
 
         public object Clone()
         {

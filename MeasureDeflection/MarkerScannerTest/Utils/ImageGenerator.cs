@@ -19,6 +19,12 @@ namespace MarkerScannerTest.Utils
     {
         public const int DefaultWidth = 1280;
         public const int DefaultHeight = 1024;
+        public const int DefaultCentreXpos = DefaultWidth / 2;
+        public const int DefaultCentreYPos = DefaultHeight / 2;
+
+        public const int DefaultRadius = DefaultHeight / 3;
+
+        public static readonly Point DefaultCentre = new Point(DefaultCentreXpos, DefaultCentreYPos);
 
         BitmapSource Image;
         DrawingVisual Visual;
