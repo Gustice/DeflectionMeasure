@@ -132,5 +132,72 @@ namespace MarkerScannerTest
             Assert.AreEqual(vTip.Diameter, Sink.MovingTip.D, 2);
         }
 
+        [TestMethod]
+        public void TestWithMovingMarkers()
+        {
+            double dPhi = 4;
+            double Phi = 40;
+
+            double phi = 0;
+
+            string name = Path.Combine(this.GetType().Name, $"Moving");
+
+            do
+            {
+                var test = new TestDescription(MethodBase.GetCurrentMethod().Name, name);
+                ImageGenerator generator = new ImageGenerator(test.Name);
+                Marker vAncor = new Marker()
+                {
+                    Center = ImageGenerator.DefaultCentre,
+                    Diameter = 60,
+                    Fill = Colors.Green,
+                    Border = Colors.Gray
+                };
+                generator.AddMarkerToImage(vAncor);
+
+                var xDelta = ImageGenerator.DefaultRadius * Math.Sin(Extensions.ConvertToRadians(phi));
+                var yDelta = ImageGenerator.DefaultRadius * Math.Cos(Extensions.ConvertToRadians(phi));
+                var delta = new Vector(xDelta, yDelta);
+                Marker vTip = new Marker()
+                {
+                    Center = ImageGenerator.DefaultCentre + delta,
+                    Diameter = 100,
+                    Fill = Colors.Blue,
+                    Border = Colors.Gray
+                };
+                generator.AddMarkerToImage(vTip);
+
+                var img = generator.RenderImage();
+                TestImageHelper.SaveBitmap(test.FileName_Image, img);
+
+                var sut = new MarkerScanner(Sink.PromptNewMessage_Handler, Sink.OnAnchorSetEvent, Sink.OnMovingTipSetEvent);
+                var aProfile = new TargetProfile() { Centre = new BlobCentre(vAncor.Center, 0), Color = Extensions.SetColor(vAncor.Fill) };
+                var mtProfile = new TargetProfile() { Centre = new BlobCentre(vTip.Center, 0), Color = Extensions.SetColor(vTip.Fill) };
+
+                Sink.MyLog.Clear();
+                Sink.ResetPoints();
+                sut.TryToSetAnchor(img, aProfile);
+                sut.TryToSetTip(img, mtProfile);
+
+                var pImg = sut.ProcessImage(img, 1);
+
+                TestImageHelper.SaveBitmap(test.FileName_Processed, pImg as BitmapSource);
+
+                Assert.AreEqual(vAncor.Center.X, Sink.Anchor.C.X, 2);
+                Assert.AreEqual(vAncor.Center.Y, Sink.Anchor.C.Y, 2);
+                Assert.AreEqual(vAncor.Diameter, Sink.Anchor.D, 2);
+
+                Assert.AreEqual(aProfile.Centre.X, sut.Profile.Anchor.Initial.Centre.X);
+                Assert.AreEqual(aProfile.Centre.Y, sut.Profile.Anchor.Initial.Centre.Y);
+                Assert.AreEqual(aProfile.Centre.D, sut.Profile.Anchor.Initial.Centre.D);
+
+                Assert.AreEqual(vTip.Center.X, Sink.MovingTip.C.X, 2);
+                Assert.AreEqual(vTip.Center.Y, Sink.MovingTip.C.Y, 2);
+                Assert.AreEqual(vTip.Diameter, Sink.MovingTip.D, 2);
+
+                phi = phi + dPhi;
+            } while (phi <= Phi);
+        }
+
     }
 }

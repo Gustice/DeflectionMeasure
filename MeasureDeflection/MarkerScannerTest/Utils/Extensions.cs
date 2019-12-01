@@ -14,5 +14,10 @@ namespace MarkerScannerTest.Utils
             System.Drawing.Color c = System.Drawing.Color.FromArgb(color.R, color.G, color.B);
             return c;
         }
+
+        public static double ConvertToRadians(double angle)
+        {
+            return (Math.PI / 180) * angle;
+        }
     }
 }
