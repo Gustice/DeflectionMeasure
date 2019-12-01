@@ -2,17 +2,13 @@
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Collections.Generic;
-using Microsoft.Win32;
 using System.Windows.Media.Imaging;
 
 using MeasureDeflection;
-using MeasureDeflection.Utils;
 using MeasureDeflection.Processor;
 
 using MarkerScannerTest.Utils;
 using System.IO;
-using MarkerScannerTest.Properties;
 using System.Reflection;
 
 namespace MarkerScannerTest

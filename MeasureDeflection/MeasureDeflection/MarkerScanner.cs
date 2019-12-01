@@ -19,6 +19,10 @@ using MeasureDeflection.Processor;
 
 namespace MeasureDeflection
 {
+    /// <summary>
+    /// Processor for captured Images.
+    /// Scans for marks and returns found positions
+    /// </summary>
     public class MarkerScanner
     {
         private bool _initFinished;
@@ -57,10 +61,16 @@ namespace MeasureDeflection
             Operation = OperationMode.missingData;
         }
 
+        /// <summary>
+        /// Helper for analyzing pictures
+        /// </summary>
         Analyzer PicAnalyzer = new Analyzer();
 
-
         private BlobCentre anchorPoint;
+        /// <summary>
+        /// Public anchor point.
+        /// Can also be monitored by event.
+        /// </summary>
         public BlobCentre AnchorPoint
         {
             get => anchorPoint; 
@@ -72,6 +82,10 @@ namespace MeasureDeflection
         }
 
         private BlobCentre tipPoint;
+        /// <summary>
+        /// Public tip point.
+        /// Can also be monitored by event.
+        /// </summary>
         public BlobCentre TipPoint
         {
             get => tipPoint;
@@ -82,7 +96,15 @@ namespace MeasureDeflection
             }
         }
 
-
+        /// <summary>
+        /// Defines Anchor in picutre. 
+        /// Color profile is applied and found marks a tested agains give position.
+        /// Matched mark is set as anchor point. If only one mark remains it is set as tip point.
+        /// Note: Processing is optimized for round marks only.
+        /// </summary>
+        /// <param name="camImage"></param>
+        /// <param name="anchorTarget"></param>
+        /// <returns></returns>
         public ImageSource TryToSetAnchor(BitmapSource camImage, TargetProfile anchorTarget)
         {
             _initFinished = false;
@@ -115,6 +137,15 @@ namespace MeasureDeflection
             return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
+        /// <summary>
+        /// Defines moving Tip in picutre. 
+        /// Color profile is applied and found marks a tested agains give position.
+        /// Matched mark is set as tip point.
+        /// Note: Processing is optimized for round marks only.
+        /// </summary>
+        /// <param name="camImage"></param>
+        /// <param name="anchorTarget"></param>
+        /// <returns></returns>
         public ImageSource TryToSetTip(BitmapSource camImage, TargetProfile movingTipTarget)
         {
             TipPoint = null;
@@ -140,6 +171,14 @@ namespace MeasureDeflection
             return Bitmap2BitmapImage(PicAnalyzer.PorcessedImg);
         }
 
+        /// <summary>
+        /// Processes Images after Anchor and Tip point are set.
+        /// Old positions are taken as reference positions. 
+        /// New position of marker is only accepted if new marker is found within tolerance in reference to last known position.
+        /// </summary>
+        /// <param name="camImage"></param>
+        /// <param name="tolerancefactor"></param>
+        /// <returns>Processed image with annotations</returns>
         public RenderTargetBitmap ProcessImage(BitmapSource camImage, double tolerancefactor)
         {
             int tolerance = 0;
@@ -175,6 +214,7 @@ namespace MeasureDeflection
             return GenerateAnnotatedImage(filterImage, tolerance);
         }
 
+
         private System.Drawing.Bitmap EvalPart(BitmapSource camImage, DynamicProfile mark,  int tolerance, string targetName)
         {
             var blobs = PicAnalyzer.FindBlobs(mark.Last, camImage);
@@ -201,9 +241,7 @@ namespace MeasureDeflection
         private BitmapImage CombineImages(System.Drawing.Bitmap anchorView, System.Drawing.Bitmap movingTipView)
         {
             BitmapImage filterImage;
-            //create a bitmap to hold the combined image
             System.Drawing.Bitmap combindedImage = new System.Drawing.Bitmap(anchorView.Width, anchorView.Height);
-            //get a graphics object from the image so we can draw on it
             using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(combindedImage))
             {
                 //set background color
